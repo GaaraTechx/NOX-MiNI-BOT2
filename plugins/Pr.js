@@ -9,31 +9,39 @@ cmd({
 },
 async (socket, mek, m, { reply, quoted, args, from, isGroup, isBotAdmins }) => {
 
-    
+    if (!isGroup) return reply("❌ Cette commande fonctionne uniquement dans un groupe !");
+    if (!isBotAdmins) return reply("⚠️ Je dois être admin pour promouvoir quelqu’un !");
+
     let target;
 
-    // ✅ 1. Si l’utilisateur répond à un message
-    if (quoted) {
-        target = quoted.sender;
+    // 🔥 1. Promote en répondant à un message (compatibilité totale)
+    if (mek.quoted) {
+        target =
+            mek.quoted.sender ||
+            mek.quoted.participant ||
+            mek.quoted.key?.participant ||
+            mek.quoted.msg?.sender ||
+            null;
     }
 
-    // ✅ 2. S'il tape un numéro (ex: .promote 50932362388)
+    // 🔥 2. Promote avec numéro
     else if (args[0]) {
         let number = args[0].replace(/[^0-9]/g, "");
         if (number.length < 7) return reply("❌ Numéro invalide !");
         target = number + "@s.whatsapp.net";
     }
 
-    else {
-        return reply("📌 Utilise :\n• Répondre à un message et taper *.promote*\n• Ou taper : *.promote 509XXXXXXXX*");
+    // Aucun target détecté
+    if (!target) {
+        return reply("📌 Utilise :\n• Répondre à un message + *.promote*\n• Ou : *.promote 509XXXXXXXX*");
     }
 
-    // 🔥 Exécution de la promotion
+    // 🔥 Exécuter le promote
     try {
         await socket.groupParticipantsUpdate(from, [target], "promote");
         reply(`✅ @${target.split("@")[0]} est maintenant admin !`, { mentions: [target] });
     } catch (err) {
-        console.error(err);
+        console.log(err);
         reply("❌ Erreur lors de la promotion.");
     }
 });
