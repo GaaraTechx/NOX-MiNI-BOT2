@@ -48,7 +48,7 @@ async(conn, mek, m, { from, reply, myquoted }) => {
 //cmd ping2
 //==============[ PING PLUGIN — NOX MINI ]===============//
 cmd({
-    name: "ping",
+    name: "ping2",
     alias: ['speed', 'latence'],
     desc: "Teste la vitesse du bot",
     category: "Général",
@@ -156,7 +156,17 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
 
 ╭━━━━━━❖ *ＭＯＤＵＬＥＳ  ＤＵ  ＢＯＴ* ❖━━━━━━╮
 `;
+ const categoryMap = {};
 
+        commands.forEach((cmd) => {
+            if (!cmd.dontAddCommandList && cmd.pattern) {
+                const cat = cmd.category.toUpperCase();
+                if (!categoryMap[cat]) {
+                    categoryMap[cat] = [];
+                }
+                categoryMap[cat].push(cmd.pattern);
+            }
+        });
 const keys = Object.keys(categoryMap).sort();
 
 keys.forEach((category) => {
