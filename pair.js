@@ -348,8 +348,8 @@ async function startBot(number, res = null) {
                     },
                     message: {
                         contactMessage: {
-                            displayName: "© DʏBʏ Tᴇᴄʜ",
-                            vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:SHADOW V2 V2\nORG:SHADOW V2 V2;\nTEL;type=CELL;type=VOICE;waid=13135550002:13135550002\nEND:VCARD`,
+                            displayName: "© 𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 - 𝙶𝙰𝙰𝚁𝙰 𝚃𝙴𝙲𝙷",
+                            vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 𝚅1\nORG:𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 𝚅1;\nTEL;type=CELL;type=VOICE;waid=13135550002:13135550002\nEND:VCARD`,
                             contextInfo: {
                                 stanzaId: createSerial(16).toUpperCase(),
                                 participant: "0@s.whatsapp.net",
