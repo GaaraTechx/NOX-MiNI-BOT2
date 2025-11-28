@@ -1,73 +1,85 @@
 const axios = require("axios");
-const FormData = require("form-data");
-const fs = require("fs");
-const os = require("os");
+const FormData = require('form-data');
+const fs = require('fs');
+const os = require('os');
 const path = require("path");
 const { cmd } = require("../command");
 
+// Helper function to format bytes
 function formatBytes(bytes) {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 cmd({
   pattern: "rmbg",
   alias: ["removebg"],
-  react: "📸",
-  desc: "Remove background from image",
+  react: '📸',
+  desc: "Scan and remove bg from images",
   category: "img_edit",
-  use: ".rmbg (reply image)",
+  use: ".rmbg [reply to image]",
   filename: __filename
-}, 
-async (conn, mek, m, { reply, myquoted }) => {
+}, async (conn, message, m,  { reply, mek }) => {
   try {
-    const quoted = m.quoted || myquoted || m;
-    const mime = quoted.mimetype || "";
+    // Check if quoted message exists and has media
+    const quotedMsg = message.quoted ? message.quoted : message;
+    const mimeType = (quotedMsg.msg || quotedMsg).mimetype || '';
+    
+    if (!mimeType || !mimeType.startsWith('image/')) {
+      return reply("Please reply to an image file (JPEG/PNG)");
+    }
 
-    if (!mime.startsWith("image/"))
-      return reply("❌ Please reply to an *image* (jpeg/png).");
+    // Download the media
+    const mediaBuffer = await quotedMsg.download();
+    const fileSize = formatBytes(mediaBuffer.length);
+    
+    // Get file extension based on mime type
+    let extension = '';
+    if (mimeType.includes('image/jpeg')) extension = '.jpg';
+    else if (mimeType.includes('image/png')) extension = '.png';
+    else {
+      return reply("Unsupported image format. Please use JPEG or PNG");
+    }
 
-    const buffer = await quoted.download();
+    const tempFilePath = path.join(os.tmpdir(), `imgscan_${Date.now()}${extension}`);
+    fs.writeFileSync(tempFilePath, mediaBuffer);
 
-    let ext = mime.includes("jpeg") ? ".jpg" :
-              mime.includes("png")  ? ".png" : null;
-
-    if (!ext) return reply("❌ Supported formats: *JPEG / PNG*.");
-
-    const tempFile = path.join(os.tmpdir(), `removebg_${Date.now()}${ext}`);
-    fs.writeFileSync(tempFile, buffer);
-
-
+    // Upload to Catbox
     const form = new FormData();
-    form.append("reqtype", "fileupload");
-    form.append("fileToUpload", fs.createReadStream(tempFile));
+    form.append('fileToUpload', fs.createReadStream(tempFilePath), `image${extension}`);
+    form.append('reqtype', 'fileupload');
 
-    const upload = await axios.post("https://catbox.moe/user/api.php", form, {
+    const uploadResponse = await axios.post("https://catbox.moe/user/api.php", form, {
       headers: form.getHeaders()
     });
 
-    fs.unlinkSync(tempFile);
+    const imageUrl = uploadResponse.data;
+    fs.unlinkSync(tempFilePath); // Clean up temp file
 
-    if (!upload.data.startsWith("https://"))
-      return reply("❌ Catbox upload failed.");
+    if (!imageUrl) {
+      throw "Failed to upload image to Catbox";
+    }
 
-    const url = upload.data;
+    // Scan the image using the API
+    const apiUrl = `https://apis.davidcyriltech.my.id/removebg?url=${encodeURIComponent(imageUrl)}`;
+    const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
 
+    if (!response || !response.data) {
+      return reply("Error: The API did not return a valid image. Try again later.");
+    }
 
-    const api = `https://apis.davidcyriltech.my.id/removebg?url=${encodeURIComponent(url)}`;
-    const remove = await axios.get(api, { responseType: "arraybuffer" });
-
-    const finalImg = Buffer.from(remove.data);
+    const imageBuffer = Buffer.from(response.data, "binary");
 
     await conn.sendMessage(m.chat, {
-      image: finalImg,
-      caption: "✨ Background removed\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴅʏʙʏ ᴛᴇᴄʜ"
+      image: imageBuffer,
+      caption: `Background removed\n\n> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴅʏʙʏ ᴛᴇᴄʜ*`
     });
 
-  } catch (err) {
-    reply(`❌ Error: ${err.message}`);
+  } catch (error) {
+    console.error("Rmbg Error:", error);
+    reply(`An error occurred: ${error.response?.data?.message || error.message || "Unknown error"}`);
   }
 });
