@@ -3,31 +3,39 @@ const { cmd } = require('../command');
 cmd({
     pattern: "promote",
     alias: ["admin"],
-    desc: "Promote a member to admin",
+    desc: "Promote a user to admin",
     category: "group",
     react: "⬆️"
 },
-async (conn, mek, m, { reply, sender, isGroup, isAdmins, isBotAdmins, quoted, args }) => {
+async (socket, mek, m, { reply, quoted, args, from, isGroup, isBotAdmins }) => {
 
-    
+    if (!isGroup) return reply("❌ Cette commande fonctionne uniquement dans un groupe !");
+    if (!isBotAdmins) return reply("⚠️ Je dois être admin pour promouvoir une personne !");
+
     let target;
-    
+
+    // ✅ 1. Si l’utilisateur répond à un message
     if (quoted) {
         target = quoted.sender;
-    } else if (args[0]) {
-        target = args[0].replace(/[@+]/g, "") + "@s.whatsapp.net";
-    } else {
-        return reply("📌 Utilise :\n.promote @user ou citer un message");
     }
 
-    // Exécuter la promotion
+    // ✅ 2. S'il tape un numéro (ex: .promote 50932362388)
+    else if (args[0]) {
+        let number = args[0].replace(/[^0-9]/g, "");
+        if (number.length < 7) return reply("❌ Numéro invalide !");
+        target = number + "@s.whatsapp.net";
+    }
+
+    else {
+        return reply("📌 Utilise :\n• Répondre à un message et taper *.promote*\n• Ou taper : *.promote 509XXXXXXXX*");
+    }
+
+    // 🔥 Exécution de la promotion
     try {
-        await conn.groupParticipantsUpdate(m.from, [target], "promote");
-        reply(` admin !`, {
-            mentions: [target]
-        });
-    } catch (e) {
-        console.error(e);
+        await socket.groupParticipantsUpdate(from, [target], "promote");
+        reply(`✅ @${target.split("@")[0]} est maintenant admin !`, { mentions: [target] });
+    } catch (err) {
+        console.error(err);
         reply("❌ Erreur lors de la promotion.");
     }
 });
