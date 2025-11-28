@@ -47,7 +47,6 @@ async(conn, mek, m, { from, reply, myquoted }) => {
 });
 //cmd ping2
 //==============[ PING PLUGIN — NOX MINI ]===============//
-
 cmd({
     name: "ping",
     alias: ['speed', 'latence'],
@@ -116,7 +115,8 @@ cmd({
             console.error("PING ERROR:", err);
         }
     }
-};
+});
+
 // =================================================================
 // 📜 COMMANDE MENU (Style Dashboard)
 // =================================================================
