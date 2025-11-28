@@ -1,66 +1,73 @@
-const { cmd } = require('../command');
-const axios = require('axios');
-const FormData = require('form-data');
+const axios = require("axios");
+const FormData = require("form-data");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { cmd } = require("../command");
+
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
 
 cmd({
-    pattern: "rmbg",
-    alias: ["removebg", "bgremove"],
-    desc: "Remove background of an image",
-    category: "tools",
-    react: "🖼️"
-},
-async (socket, mek, m, { reply, quoted }) => {
+  pattern: "rmbg",
+  alias: ["removebg"],
+  react: "📸",
+  desc: "Remove background from image",
+  category: "img_edit",
+  use: ".rmbg (reply image)",
+  filename: __filename
+}, 
+async (conn, mek, m, { reply, myquoted }) => {
+  try {
+    const quoted = m.quoted || myquoted || m;
+    const mime = quoted.mimetype || "";
 
-    // Vérifier si on répond à une image
-    const q = mek.quoted || quoted;
-    
+    if (!mime.startsWith("image/"))
+      return reply("❌ Please reply to an *image* (jpeg/png).");
 
-    // Télécharger l'image
-    let buffer;
-    try {
-        buffer = await q.download();
-    } catch (e) {
-        console.log(e);
-        return reply("❌ Impossible de télécharger l'image.");
-    }
+    const buffer = await quoted.download();
 
-    reply("⏳ Suppression de l’arrière-plan...");
+    let ext = mime.includes("jpeg") ? ".jpg" :
+              mime.includes("png")  ? ".png" : null;
 
-    try {
-        // Préparer FormData
-        const form = new FormData();
-        form.append("image", buffer, {
-            filename: "image.jpg",
-            contentType: "image/jpeg"
-        });
+    if (!ext) return reply("❌ Supported formats: *JPEG / PNG*.");
 
-        // POST vers DeepAI
-        const resp = await axios.post(
-            "https://api.deepai.org/api/background-remover",
-            form,
-            {
-                headers: {
-                    ...form.getHeaders(),
-                    "api-key": "bf02c310-5baf-4eb9-9ad6-446dc0f91d86" // 🔥 METS TA KEY ICI
-                }
-            }
-        );
+    const tempFile = path.join(os.tmpdir(), `removebg_${Date.now()}${ext}`);
+    fs.writeFileSync(tempFile, buffer);
 
-        const resultUrl = resp.data.output_url;
 
-        if (!resultUrl) return reply("❌ Erreur API.");
+    const form = new FormData();
+    form.append("reqtype", "fileupload");
+    form.append("fileToUpload", fs.createReadStream(tempFile));
 
-        // Télécharger l'image finale
-        const finalImg = await axios.get(resultUrl, { responseType: "arraybuffer" });
+    const upload = await axios.post("https://catbox.moe/user/api.php", form, {
+      headers: form.getHeaders()
+    });
 
-        // Envoyer l'image sans BG
-        await socket.sendMessage(m.from, {
-            image: Buffer.from(finalImg.data),
-            caption: "✅ Arrière-plan supprimé !"
-        });
+    fs.unlinkSync(tempFile);
 
-    } catch (err) {
-        console.log(err);
-        reply("❌ Erreur lors du traitement de l'image.");
-    }
+    if (!upload.data.startsWith("https://"))
+      return reply("❌ Catbox upload failed.");
+
+    const url = upload.data;
+
+
+    const api = `https://apis.davidcyriltech.my.id/removebg?url=${encodeURIComponent(url)}`;
+    const remove = await axios.get(api, { responseType: "arraybuffer" });
+
+    const finalImg = Buffer.from(remove.data);
+
+    await conn.sendMessage(m.chat, {
+      image: finalImg,
+      caption: "✨ Background removed\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴅʏʙʏ ᴛᴇᴄʜ"
+    });
+
+  } catch (err) {
+    reply(`❌ Error: ${err.message}`);
+  }
 });
