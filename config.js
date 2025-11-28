@@ -19,7 +19,7 @@ module.exports = {
     OWNER_NUMBER: process.env.OWNER_NUMBER || '50932362388', // Mettez votre numéro ici
     BOT_NAME: "𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻",
     BOT_FOOTER: '> 𝑷𝑶𝑾𝑬𝑹𝑬𝑫 𝑩𝒀 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻',
-    ADMINEVENTS: process.env.ADMINEVENTS || 'true',
+    ADMINEVENTS: process.env.ADMINEVENTS || 'on',
     // Mode de travail : public, private, group, inbox
     WORK_TYPE: process.env.WORK_TYPE || "public", 
     
