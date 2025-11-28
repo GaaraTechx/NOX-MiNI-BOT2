@@ -9,9 +9,7 @@ cmd({
 },
 async (socket, mek, m, { reply, quoted, args, from, isGroup, isBotAdmins }) => {
 
-    if (!isGroup) return reply("❌ Cette commande fonctionne uniquement dans un groupe !");
-    if (!isBotAdmins) return reply("⚠️ Je dois être admin pour promouvoir une personne !");
-
+    
     let target;
 
     // ✅ 1. Si l’utilisateur répond à un message
