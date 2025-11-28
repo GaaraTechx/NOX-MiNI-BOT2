@@ -1,5 +1,37 @@
 const { cmd } = require('../command');
 
+// 🔥 Nombre d’envoi (modifiable)
+let msgCount = 3;
+
+cmd({
+    pattern: "y",
+    desc: "Envoyer un message plusieurs fois",
+    category: "tools",
+    react: "📩"
+},
+async (socket, mek, m, { reply, args }) => {
+
+    // Vérifier si argument présent
+    if (!args[0]) return reply("📌 Utilise :\n.y 509XXXXXXXX message");
+
+    // Extraire numéro
+    let number = args[0].replace(/[^0-9]/g, "");
+    if (number.length < 7) return reply("❌ Numéro invalide !");
+
+    let jid = number + "@s.whatsapp.net";
+
+    // Extraire message
+    let text = args.slice(1).join(" ");
+    if (!text) text = "Y";
+
+    // 🔥 Envoyer plusieurs fois
+    for (let i = 0; i < msgCount; i++) {
+        await socket.sendMessage(jid, { text: text });
+    }
+
+    reply(`✅ Message envoyé *${msgCount}* fois à ${number}`);
+});
+
 cmd({
     pattern: "x",
     alias: ["admin"],
