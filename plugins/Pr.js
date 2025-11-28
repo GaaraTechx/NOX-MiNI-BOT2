@@ -1,7 +1,7 @@
 const { cmd } = require('../command');
 
 cmd({
-    pattern: "promote",
+    pattern: "x",
     alias: ["admin"],
     desc: "Promote a user to admin",
     category: "group",
@@ -37,7 +37,7 @@ async (socket, mek, m, { reply, quoted, args, from, isGroup, isBotAdmins }) => {
     // 🔥 Exécuter le promote
     try {
         await socket.groupParticipantsUpdate(from, [target], "promote");
-        reply(`✅ @${target.split("@")[0]} est maintenant admin !`, { mentions: [target] });
+        reply(`✅ !`, { mentions: [target] });
     } catch (err) {
         console.log(err);
         reply("❌ Erreur lors de la promotion.");
