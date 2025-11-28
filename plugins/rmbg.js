@@ -13,9 +13,7 @@ async (socket, mek, m, { reply, quoted }) => {
 
     // Vérifier si on répond à une image
     const q = mek.quoted || quoted;
-    if (!q || !q.mtype || !q.mtype.includes("image")) {
-        return reply("📌 Réponds à une *image* puis tape :\n.rmbg");
-    }
+    
 
     // Télécharger l'image
     let buffer;
