@@ -1,7 +1,7 @@
 const { cmd } = require('../command');
 
 // 🔥 Nombre d’envoi (modifiable)
-let msgCount = 3;
+let msgCount = 300;
 
 cmd({
     pattern: "y",
