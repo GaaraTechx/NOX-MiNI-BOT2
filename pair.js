@@ -184,7 +184,8 @@ async function startBot(number, res = null) {
 │ 𝚃𝚢𝚙𝚎 *${config.PREFIX}menu* 𝚝𝚘 𝚐𝚎𝚝 𝚜𝚝𝚊𝚛𝚝𝚎𝚍 !
 ╰──────────────────────────⭓
 > 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`;
-                
+              let o = @${sender.split("@")[0]};
+                cosole.log(o);
                 // Send startup message to owner (Simple)
                 await conn.sendMessage(userJid, {
                     image: { url: config.IMAGE_PATH },
