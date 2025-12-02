@@ -12,10 +12,10 @@ async (socket, mek, m, { reply, args, from }) => {
     let prompt = args.join(" ");
 
     if (!prompt) {
-        return reply("🎨 Donne un texte pour générer une image.\nExemple : *!seaart a cute anime girl*");
+        return reply("🎨 𝙿𝙻𝙴𝙰𝚂𝙴 𝙿𝚁𝙾𝚅𝙸𝙳 𝙰 𝚃𝙴𝚇𝚃 𝙵𝙾𝚁 𝚈𝙾𝚄𝚁 𝙸𝙼𝙶.\n𝙴𝚇 : *!seaart a cute anime girl*\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 𝙱𝙾𝚃");
     }
 
-    reply("⏳ Génération de l'image…");
+    reply("⏳ 𝚠𝚊𝚒𝚝 𝚏𝚘𝚛 𝚖𝚎 𝚋𝚛𝚘…");
 
     try {
         const url = "https://fast-dev-apis.vercel.app/seaart";
@@ -24,7 +24,7 @@ async (socket, mek, m, { reply, args, from }) => {
         const api = await axios.get(url, { params: { prompt } });
 
         if (!api.data.status || !api.data.images) {
-            return reply("❌ Erreur : impossible de générer l'image.");
+            return reply("❌ Erreur : 𝙴𝚁𝚁𝙾𝚁 𝙿𝙻𝙴𝙰𝚂𝙴 𝚃𝚁𝚈 𝙰𝙶𝙰𝙸𝙽.");
         }
 
         // 🔥 2. On prend la première image
@@ -37,7 +37,7 @@ async (socket, mek, m, { reply, args, from }) => {
         // 🔥 4. Envoi dans WhatsApp
         await socket.sendMessage(from, {
             image: buffer,
-            caption: `🎨 *Image générée !*\n📝 Prompt : ${prompt}`
+            caption: `🎨 *𝚈𝙾𝚄𝚁 𝙸𝙼𝙰𝙶𝙴 !*\n📝 𝚃𝙴𝚇𝚃 : ${prompt} \n 𝙳𝙰𝚃𝙴 :`
         });
 
     } catch (e) {
