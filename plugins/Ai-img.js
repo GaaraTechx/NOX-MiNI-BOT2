@@ -16,6 +16,20 @@ async (socket, mek, m, { reply, args, from }) => {
     }
 
     reply("⏳ 𝚠𝚊𝚒𝚝 𝚏𝚘𝚛 𝚖𝚎 𝚋𝚛𝚘…");
+    // 📅 DATE HAÏTI — JOUR/MOIS/ANNÉE HEURE
+const dateObj = new Date();
+const options = { timeZone: "America/Port-au-Prince" };
+const haitiDate = new Date(dateObj.toLocaleString("en-US", options));
+
+const jour  = String(haitiDate.getDate()).padStart(2, "0");
+const mois  = String(haitiDate.getMonth() + 1).padStart(2, "0");
+const annee = haitiDate.getFullYear();
+
+const heure = String(haitiDate.getHours()).padStart(2, "0");
+const minute = String(haitiDate.getMinutes()).padStart(2, "0");
+const seconde = String(haitiDate.getSeconds()).padStart(2, "0");
+
+const dateFinale = `${jour}/${mois}/${annee} ${heure}:${minute}:${seconde}`;
 
     try {
         const url = "https://fast-dev-apis.vercel.app/seaart";
@@ -37,7 +51,7 @@ async (socket, mek, m, { reply, args, from }) => {
         // 🔥 4. Envoi dans WhatsApp
         await socket.sendMessage(from, {
             image: buffer,
-            caption: `🎨 *𝚈𝙾𝚄𝚁 𝙸𝙼𝙰𝙶𝙴 !*\n📝 𝚃𝙴𝚇𝚃 : ${prompt} \n 𝙳𝙰𝚃𝙴 :`
+            caption: `🎨 *𝚈𝙾𝚄𝚁 𝙸𝙼𝙰𝙶𝙴 !*\n📝 𝚃𝙴𝚇𝚃 : ${prompt} \n 𝙳𝙰𝚃𝙴 : ${dateFinale}`
         });
 
     } catch (e) {
