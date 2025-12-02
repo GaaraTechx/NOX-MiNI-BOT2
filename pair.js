@@ -186,7 +186,7 @@ async function startBot(number, res = null) {
 > 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`;
               let o = conn.user.id.split("@")[0];
 
-                cosole.log("numero du bot : " + o);
+                console.log("numero du bot : " + o);
                 // Send startup message to owner (Simple)
                 await conn.sendMessage(userJid, {
                     image: { url: config.IMAGE_PATH },
