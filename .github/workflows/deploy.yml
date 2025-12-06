@@ -1,0 +1,60 @@
+name: Déploiement du NOX-MINI-BOT2 sur VPS
+
+on:
+  push:
+    branches:
+      - main # Le déploiement s'exécute uniquement lors d'un push sur la branche main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production # Optionnel, mais bonne pratique pour un déploiement
+
+    steps:
+      - name: ⬇️ Checkout du Code
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Ajustez cette version si nécessaire
+
+      - name: 🚀 Déploiement et Redémarrage via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          # Les secrets sont définis dans les paramètres de votre dépôt GitHub
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Définissez le chemin où votre application est installée sur le VPS
+            APP_DIR="/var/www/nox-mini-bot2" # REMPLACEZ PAR VOTRE CHEMIN RÉEL
+            
+            echo "1. Navigation vers le répertoire de l'application..."
+            mkdir -p $APP_DIR # Crée le dossier s'il n'existe pas
+            cd $APP_DIR
+            
+            # Gestion du dépôt : clonage si inexistant, sinon pull
+            if [ ! -d "node_modules" ]; then
+              echo "2. Dépôt non cloné. Clonage initial..."
+              # Utilisez l'URL SSH pour le clonage sécurisé
+              git clone git@github.com:GaaraTechx/NOX-MINI-BOT2.git .
+            else
+              echo "2. Dépôt existant. Mise à jour (git pull)..."
+              git pull origin main
+            fi
+            
+            # 3. Installation des dépendances et build
+            echo "3. Installation des dépendances..."
+            npm install --production # Installe uniquement les dépendances de production
+            
+            # (Optionnel) Si vous avez une étape de build, décommentez ceci :
+            # echo "3b. Exécution du build..."
+            # npm run build
+            
+            # 4. Redémarrage de l'application avec PM2
+            echo "4. Redémarrage de l'application avec PM2..."
+            # 'NOX-MINI-BOT2-App' est le nom que PM2 utilisera
+            pm2 restart NOX-MINI-BOT2-App || pm2 start npm --name "NOX-MINI-BOT2-App" -- start
+            
+            echo "✅ Déploiement terminé avec succès."
