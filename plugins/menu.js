@@ -1,33 +1,28 @@
 const { cmd } = require('../command');
 const fs = require('fs');
 const path = require('path');
-cmd({
+
+Cmd({
     pattern: "menu",
     alias: ["list", "help", "commands"],
     desc: "Afficher le tableau de bord",
     category: "general",
-    react: "👑" // Nouvelle réaction élégante
+    react: "👑" // Nouvelle réaction !
 },
 async(conn, mek, m, { from, pushname, reply, isOwner, myquoted, commands, config }) => {
     try {
-        // --- 1. Calcul de l'Uptime et Date/Heure ---
+        // 1. Calcul de l'Uptime (Temps d'activité)
         const uptime = process.uptime();
         const hours = Math.floor(uptime / 3600);
         const minutes = Math.floor((uptime % 3600) / 60);
         const seconds = Math.floor(uptime % 60);
         const uptimeString = `${hours}h ${minutes}m ${seconds}s`;
 
+        // 2. Date et Heure
         const date = new Date().toLocaleDateString("fr-FR");
         const time = new Date().toLocaleTimeString("fr-FR");
 
-        // --- Vérification Cruciale ---
-        // S'assurer que 'commands' est bien un tableau itérable
-        if (!Array.isArray(commands)) {
-            console.error("L'objet 'commands' est manquant ou non-itérable.");
-            return reply("⚠️ Erreur interne : Impossible de charger la liste des commandes. Contactez le développeur.");
-        }
-
-        // --- 2. EN-TÊTE DIAMANTÉ (Design Amélioré) ---
+        // --- EN-TÊTE DIAMANTÉ ---
         let menu = `
 💎━━━━━━ 『 *ＮＯＸ ＭＩＮＩ ＢＯＴ* 』 ━━━━━━💎
 ┃
@@ -42,13 +37,12 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted, commands, config
 
 ╭━━━━━━━━━━━ 『 *PANNEAU DE CONTRÔLE* 』 ━━━━━━━━━━━╮
 `;
-        
-        // --- 3. LOGIQUE DE CATÉGORISATION ---
+        // --- LOGIQUE DE CATÉGORISATION ---
         const categoryMap = {};
 
         commands.forEach((cmd) => {
             if (!cmd.dontAddCommandList && cmd.pattern) {
-                // Met la première lettre en majuscule (ex: 'General')
+                // Met la première lettre en majuscule, le reste en minuscule (ex: 'General')
                 const cat = cmd.category.charAt(0).toUpperCase() + cmd.category.slice(1).toLowerCase();
                 if (!categoryMap[cat]) {
                     categoryMap[cat] = [];
@@ -59,9 +53,9 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted, commands, config
         
         const keys = Object.keys(categoryMap).sort();
 
-        // --- 4. AFFICHAGE DES CATÉGORIES EN ONGLET ---
+        // --- AFFICHAGE DES CATÉGORIES EN ONGLET ---
         keys.forEach((category) => {
-            // Mapping d'emojis pour un style visuel
+            // Mapping d'emojis plus stylisé
             let catEmoji;
             switch (category.toLowerCase()) {
                 case 'general':
@@ -94,7 +88,7 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted, commands, config
             menu += `│ ╰────────────────────\n`; // Fermeture de l'onglet
         });
 
-        // --- 5. PIED DE PAGE ---
+        // --- PIED DE PAGE ---
         menu += `
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
@@ -109,6 +103,6 @@ ${config.BOT_FOOTER}`;
 
     } catch (e) {
         console.error(e);
-        reply("❌ Erreur interne lors de la construction du menu: " + e.message);
+        reply("❌ Erreur lors de la construction du menu: " + e.message);
     }
 });
