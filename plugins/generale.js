@@ -121,7 +121,7 @@ cmd({
 // 📜 COMMANDE MENU (Style Dashboard)
 // =================================================================
 
-Cmd({
+cmd({
     pattern: "menu",
     alias: ["list", "help", "commands"],
     desc: "Afficher le tableau de bord",
