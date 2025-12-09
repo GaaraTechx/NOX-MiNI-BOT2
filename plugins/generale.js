@@ -120,14 +120,15 @@ cmd({
 // =================================================================
 // 📜 COMMANDE MENU (Style Dashboard)
 // =================================================================
-cmd({
+
+Cmd({
     pattern: "menu",
     alias: ["list", "help", "commands"],
     desc: "Afficher le tableau de bord",
     category: "general",
-    react: "🕷️"
+    react: "👑" // Nouvelle réaction !
 },
-async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
+async(conn, mek, m, { from, pushname, reply, isOwner, myquoted, commands, config }) => {
     try {
         // 1. Calcul de l'Uptime (Temps d'activité)
         const uptime = process.uptime();
@@ -140,59 +141,91 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
         const date = new Date().toLocaleDateString("fr-FR");
         const time = new Date().toLocaleTimeString("fr-FR");
 
-        // 3. En-tête du Menu
+        // --- EN-TÊTE DIAMANTÉ ---
         let menu = `
-╭━━━━━━❖ NＯＸ  ＭＩＮＩ  ＢＯＴ* ❖━━━━━━╮
-│  
-│ 🧑‍💻 *Utilisateur:* ${pushname}
-│ 👑 *Propriétaire:* ${isOwner ? 'Oui' : 'Non'}
-│ ⏳ *Uptime:* ${uptimeString}
-│ 📆 *Date:* ${date}
-│ 🕒 *Heure:* ${time}
-│ 💽 *RAM:* ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
-│
+💎━━━━━━ 『 *ＮＯＸ ＭＩＮＩ ＢＯＴ* 』 ━━━━━━💎
+┃
+┃  ✨ *UTILISATEUR* : ${pushname}
+┃  ${isOwner ? '🔑' : '👤'} *STATUT* : ${isOwner ? 'Propriétaire' : 'Membre'}
+┃
+┃  🌐 *ACTIF DEPUIS* : ${uptimeString}
+┃  ⚙️ *MÉMOIRE* : ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
+┃  📅 *DATE/HEURE* : ${date} à ${time}
+┃
 ╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
 
-
-╭━━━━━━❖ *ＭＯＤＵＬＥＳ  ＤＵ  ＢＯＴ* ❖━━━━━━╮
+╭━━━━━━━━━━━ 『 *PANNEAU DE CONTRÔLE* 』 ━━━━━━━━━━━╮
 `;
- const categoryMap = {};
+        // --- LOGIQUE DE CATÉGORISATION ---
+        const categoryMap = {};
 
         commands.forEach((cmd) => {
             if (!cmd.dontAddCommandList && cmd.pattern) {
-                const cat = cmd.category.toUpperCase();
+                // Met la première lettre en majuscule, le reste en minuscule (ex: 'General')
+                const cat = cmd.category.charAt(0).toUpperCase() + cmd.category.slice(1).toLowerCase();
                 if (!categoryMap[cat]) {
                     categoryMap[cat] = [];
                 }
-                categoryMap[cat].push(cmd.pattern);
+                categoryMap[cat].push({ pattern: cmd.pattern, desc: cmd.desc });
             }
         });
-const keys = Object.keys(categoryMap).sort();
+        
+        const keys = Object.keys(categoryMap).sort();
 
-keys.forEach((category) => {
-    menu += `
-│ 🔻 *${category}*
-│─────────────────────────────`;
-    categoryMap[category].forEach((cmd) => {
-        menu += `\n│ ➤ ${config.PREFIX}${cmd}`;
-    });
-    menu += `\n│`;
-});
+        // --- AFFICHAGE DES CATÉGORIES EN ONGLET ---
+        keys.forEach((category) => {
+            // Mapping d'emojis plus stylisé
+            let catEmoji;
+            switch (category.toLowerCase()) {
+                case 'general':
+                    catEmoji = '🌍';
+                    break;
+                case 'tools':
+                    catEmoji = '🧰';
+                    break;
+                case 'owner':
+                    catEmoji = '🔐';
+                    break;
+                case 'image':
+                    catEmoji = '🎨';
+                    break;
+                case 'download':
+                    catEmoji = '📥';
+                    break;
+                default:
+                    catEmoji = '🗂️';
+            }
 
-menu += `
-╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+            menu += `
+│ 
+│ ╭────── *${catEmoji} ${category.toUpperCase()}* ──────
+`;
+            categoryMap[category].forEach((cmd) => {
+                // Utilise le chevron pour pointer la commande
+                menu += `│ ┃ ➪ ${config.PREFIX}${cmd.pattern}\n`;
+            });
+            menu += `│ ╰────────────────────\n`; // Fermeture de l'onglet
+        });
 
-🔹 *${config.BOT_FOOTER}* `;
+        // --- PIED DE PAGE ---
+        menu += `
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+
+*» ℹ️ Pour plus de détails, utilisez ${config.PREFIX}help <commande>*
+${config.BOT_FOOTER}`;
+        
+        // Envoi du message avec l'image
         await conn.sendMessage(from, { 
             image: { url: config.IMAGE_PATH },
             caption: menu
-        }, { quoted: myquoted }); // Utilisation de ton myquoted personnalisé
+        }, { quoted: myquoted });
 
     } catch (e) {
         console.error(e);
-        reply("Error building menu: " + e.message);
+        reply("❌ Erreur lors de la construction du menu: " + e.message);
     }
 });
+
 
 // =================================================================
 // 👑 COMMANDE OWNER (Carte de visite)
