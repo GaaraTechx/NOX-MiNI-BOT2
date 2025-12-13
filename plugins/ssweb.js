@@ -3,7 +3,7 @@ const axios = require("axios");
 const URL_API = "https://fast-dev-apis.vercel.app/screenshot"; // Définir l'URL de l'API
 
 cmd({
-    pattern: "ss|screenshot",
+    pattern: "ssweb",
     desc: "Prend une capture d'écran d'un site web via une URL.",
     category: "Utility",
     react: "📸"
