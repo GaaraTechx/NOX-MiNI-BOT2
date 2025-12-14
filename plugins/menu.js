@@ -37,24 +37,23 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
         const minutes = Math.floor((uptime % 3600) / 60);
         const seconds = Math.floor(uptime % 60);
         // APPLICATION DU STYLE TYPEWRITER
-        const uptimeString = toTypewriter(`${hours}h ${minutes}m ${seconds}s`);
+        const uptimeString = `${hours}h ${minutes}m ${seconds}s`;
 
         // Date et Heure (Port-au-Prince)
-        const date = toTypewriter(new Date().toLocaleDateString("fr-FR", { timeZone: "America/Port-au-Prince" }));
-        const time = toTypewriter(new Date().toLocaleTimeString("fr-FR", { timeZone: "America/Port-au-Prince" }));
+        const date = new Date().toLocaleDateString("fr-FR", { timeZone: "America/Port-au-Prince" });
+        const time = new Date().toLocaleTimeString("fr-FR", { timeZone: "America/Port-au-Prince" });
         
         // Utilisation de la mémoire
-        const memoryUsage = toTypewriter((process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + 'MB');
+        const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + 'MB';
         
         // Nom de l'utilisateur
-        const twPushname = toTypewriter(pushname);
         
         // --- 2. En-tête du Menu (Statistiques) ---
         let menu = `
 ╭━━━〔 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻 〕━━━┈
 ┃
-┃ 👤 *𝚄𝚂𝙴𝚁:* ${twPushname}
-┃ 👑 *𝚂𝚃𝙰𝚃𝚄𝚃:* ${isOwner ? toTypewriter('OWNER') : toTypewriter('USER')}
+┃ 👤 *𝚄𝚂𝙴𝚁:* ${ushname}
+┃ 👑 *𝚂𝚃𝙰𝚃𝚄𝚃:* ${isOwner ? 'OWNER': 'USER'}
 ┃ 
 ┃ ⏳ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${uptimeString}
 ┃ 💾 *𝚁𝙰𝙼:* ${memoryUsage}
