@@ -24,7 +24,6 @@ async (socket, mek, m, { reply, args, isGroup, participants, from }) => {
 
 // 📌 TAGALL — Mentionne tout le groupe avec message visible
 // 📌 TAGADMIN — Mentionne uniquement les admins
-Const { cmd } = require('../command');
 
 cmd({
     pattern: "tagall",
