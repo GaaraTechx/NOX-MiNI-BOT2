@@ -39,9 +39,7 @@ async (conn, mek, m, { reply, args, from, isGroup, isAdmin }) => {
     }
 
     // Vérification : Optionnel mais souvent utile pour éviter le spam par les non-admins
-    if (!isAdmin) {
-        return reply("❌ Vous devez être administrateur du groupe pour utiliser cette commande.");
-    }
+    
     
     // Message personnalisé par l'utilisateur (si fourni)
     const customMessage = args.join(" ") || "📢 Message important du NOX MINI BOT 📢";
