@@ -67,28 +67,12 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
 `;
 
         // --- 3. Tri des commandes par Catégorie ---
-        const categoryMap = {};
-
-        commands.forEach((cmd) => {
-            if (!cmd.dontAddCommandList && cmd.pattern && cmd.category) {
-                const cat = cmd.category.toUpperCase();
-                if (!categoryMap[cat]) {
-                    categoryMap[cat] = [];
-                }
-                categoryMap[cat].push(cmd.pattern);
-            }
-        });
-
-        // --- 4. Génération de l'affichage par catégorie ---
         const keys = Object.keys(categoryMap).sort();
-        
-        keys.forEach((category) => {
-            // APPLICATION DU STYLE TYPEWRITER AUX NOMS DES CATÉGORIES
-            const twCategory = toTypewriter(category);
 
-            menu += `
+keys.forEach((category) => {
+    menu += `
 ┃
-┃  *╔═〔 ${twCategory} 〕*
+┃  *╔═〔 ${category} 〕*
 `;
             
             categoryMap[category].sort().forEach((cmdPattern) => {
