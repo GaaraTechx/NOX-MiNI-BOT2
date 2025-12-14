@@ -1,5 +1,6 @@
-const { cmd, commands } = require('../command');
-const config = require('../config');
+Const { cmd, commands } = require('../command');
+const config = require('../config'); // Assurez-vous que config.PREFIX, config.IMAGE_PATH, config.BOT_FOOTER sont définis ici
+
 cmd({
     pattern: "menu",
     alias: ["list", "help", "commands"],
@@ -38,7 +39,7 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
         // APPLICATION DU STYLE TYPEWRITER
         const uptimeString = toTypewriter(`${hours}h ${minutes}m ${seconds}s`);
 
-        // Date et Heure
+        // Date et Heure (Port-au-Prince)
         const date = toTypewriter(new Date().toLocaleDateString("fr-FR", { timeZone: "America/Port-au-Prince" }));
         const time = toTypewriter(new Date().toLocaleTimeString("fr-FR", { timeZone: "America/Port-au-Prince" }));
         
@@ -66,17 +67,35 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
 ╭━━〔 𝑩𝑶𝑻 𝑪𝑴𝑫 〕━━┈
 `;
 
-        // --- 3. Tri des commandes par Catégorie ---
+        // --- 3. Tri des commandes par Catégorie (CODE CORRIGÉ) ---
+        const categoryMap = {};
+
+        // Remplir la categoryMap
+        commands.forEach((command) => {
+            // Utilise la catégorie définie dans cmd() ou 'general' par défaut
+            const category = command.category || 'general'; 
+            
+            if (!categoryMap[category]) {
+                categoryMap[category] = [];
+            }
+            
+            // Ajoute le pattern/nom principal de la commande
+            categoryMap[category].push(command.pattern); 
+        });
+        
+        // Obtenir et trier les noms de catégories
         const keys = Object.keys(categoryMap).sort();
 
-keys.forEach((category) => {
-    menu += `
+        // Construire la liste des commandes dans le menu
+        keys.forEach((category) => {
+            menu += `
 ┃
-┃  *╔═〔 ${category} 〕*
+┃  *╔═〔 ${category.toUpperCase()} 〕*
 `;
             
-                categoryMap[category].forEach((cmd) => {
-            menu += `┃  ║ ─ ${config.PREFIX}${Cmd}\n`;
+            categoryMap[category].forEach((cmd) => {
+                // Assurez-vous d'utiliser le bon nom de variable (ici 'cmd')
+                menu += `┃  ║ ─ ${config.PREFIX}${cmd}\n`; 
             });
             
             menu += `┃  ╚═══════════════\n`;
