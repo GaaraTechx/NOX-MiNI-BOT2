@@ -23,35 +23,11 @@ async (socket, mek, m, { reply, args, isGroup, participants, from }) => {
 
 
 // 📌 TAGALL — Mentionne tout le groupe avec message visible
-cmd({
-    pattern: "tagall",
-    desc: "Tag tout le groupe avec message",
-    category: "group",
-    react: "📢"
-},
-async (socket, mek, m, { reply, args, isGroup, participants, from }) => {
-
-    if (!isGroup) return reply("❌ Groupe uniquement !");
-
-    let text = args.join(" ") || "📣 *TAGALL*";
-    let msg = `${text}\n\n`;
-
-    participants.forEach(p => {
-        msg += `➡️ @${p.id.split("@")[0]}\n`;
-    });
-
-    await socket.sendMessage(from, {
-        text: msg,
-        mentions: participants.map(v => v.id)
-    });
-});
-
-
 // 📌 TAGADMIN — Mentionne uniquement les admins
 Const { cmd } = require('../command');
 
 cmd({
-    pattern: "tagall|all",
+    pattern: "tagall",
     desc: "Mentionne tous les membres du groupe.",
     category: "group",
     react: "📣"
