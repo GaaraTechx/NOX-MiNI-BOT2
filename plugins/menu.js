@@ -1,4 +1,6 @@
-Cmd({
+const { cmd, commands } = require('../command');
+
+cmd({
     pattern: "menu",
     alias: ["list", "help", "commands"],
     desc: "Afficher le tableau de bord",
