@@ -1,4 +1,4 @@
-Const { cmd, commands } = require('../command');
+const { cmd, commands } = require('../command');
 const config = require('../config'); // Assurez-vous que config.PREFIX, config.IMAGE_PATH, config.BOT_FOOTER sont définis ici
 
 cmd({
