@@ -75,12 +75,8 @@ keys.forEach((category) => {
 ┃  *╔═〔 ${category} 〕*
 `;
             
-            categoryMap[category].sort().forEach((cmdPattern) => {
-                const mainCmd = cmdPattern.split('|')[0];
-                // APPLICATION DU STYLE TYPEWRITER AUX COMMANDES
-                const twMainCmd = toTypewriter(mainCmd);
-
-                menu += `┃  ║ ─ ${config.PREFIX}${twMainCmd}\n`;
+                categoryMap[category].forEach((cmd) => {
+            menu += `┃  ║ ─ ${config.PREFIX}${Cmd}\n`;
             });
             
             menu += `┃  ╚═══════════════\n`;
