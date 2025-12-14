@@ -48,31 +48,89 @@ async (socket, mek, m, { reply, args, isGroup, participants, from }) => {
 
 
 // 📌 TAGADMIN — Mentionne uniquement les admins
+Const { cmd } = require('../command');
+
 cmd({
-    pattern: "tagadmin",
-    desc: "Tag uniquement les admins",
+    pattern: "tagall|all",
+    desc: "Mentionne tous les membres du groupe.",
     category: "group",
-    react: "🛡️"
+    react: "📣"
 },
-async (socket, mek, m, { reply, isGroup, participants, from }) => {
+async (conn, mek, m, { reply, args, from, isGroup, isAdmin }) => {
 
-    if (!isGroup) return reply("❌ Groupe uniquement !");
+    // Vérification : S'assurer que la commande est utilisée dans un groupe
+    if (!isGroup) {
+        return reply("❌ Cette commande ne peut être utilisée que dans un groupe.");
+    }
 
-    let admins = participants
-        .filter(u => u.admin)
-        .map(a => a.id);
+    // Vérification : Optionnel mais souvent utile pour éviter le spam par les non-admins
+    if (!isAdmin) {
+        return reply("❌ Vous devez être administrateur du groupe pour utiliser cette commande.");
+    }
+    
+    // Message personnalisé par l'utilisateur (si fourni)
+    const customMessage = args.join(" ") || "📢 Message important du NOX MINI BOT 📢";
 
-    if (admins.length === 0) return reply("❌ Aucun admin trouvé.");
+    // 1. Récupérer les informations du groupe
+    const groupMetadata = await conn.groupMetadata(from);
+    const participants = groupMetadata.participants;
+    const groupName = groupMetadata.subject;
+    const membersCount = participants.length;
+    
+    // 2. Déterminer l'emoji conditionnel (emomember)
+    let emoMember;
+    if (membersCount < 100) {
+        emoMember = "🔴"; // Rouge
+    } else if (membersCount < 500) {
+        emoMember = "🟠"; // Orange
+    } else if (membersCount < 1000) {
+        emoMember = "🟡"; // Jaune
+    } else {
+        emoMember = "🟢"; // Vert
+    }
 
-    let txt = "🛡️ *ADMIN TAG*\n\n";
-    admins.forEach(a => {
-        txt += `⭐ @${a.split("@")[0]}\n`;
+    // 3. Construction du message et de la liste des mentions
+    let messageText = `
+𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 𝙱𝙾𝚃 👑
+
+📢 𝚃𝙰𝙶 𝙰𝙻𝙻 𝙼𝙴𝙼𝙱𝙴𝚁𝚂 𝙾𝙽 : ${groupName}
+👥 𝚃𝙾𝚃𝙰𝙻 𝙼𝙴𝙼𝙱𝙴𝚁𝚂 : ${membersCount} ${emoMember}
+💬 𝙼𝙴𝚂𝚂𝙰𝙶𝙴 : *${customMessage}*
+
+━━━━━━━━━━━━━━━
+`;
+    
+    let mentions = [];
+
+    // Tri des participants pour mettre les admins en premier (ou juste les parcourir)
+    participants.forEach(member => {
+        const jid = member.id.split('@')[0];
+        const isAdmin = member.admin === 'admin' || member.admin === 'superadmin';
+        
+        // Ajouter l'emoji ✰ devant les admins
+        const adminEmoji = isAdmin ? "✰ " : "";
+        
+        // Ajouter le préfixe et le numéro à la liste du message
+        messageText += `${adminEmoji}@${jid}\n`;
+        
+        // Ajouter l'ID complet (JID) à la liste des mentions pour que WhatsApp les reconnaisse
+        mentions.push(member.id);
     });
 
-    await socket.sendMessage(from, {
-        text: txt,
-        mentions: admins
-    });
+    try {
+        // 4. Envoi du message avec toutes les mentions
+        await conn.sendMessage(from, {
+            text: messageText,
+            contextInfo: {
+                // Cette partie est cruciale : elle dit à WhatsApp qui doit être mentionné
+                mentionedJid: mentions
+            }
+        }, { quoted: mek }); // Utilisez 'mek' comme quoted pour citer le message de l'utilisateur
+
+    } catch (e) {
+        console.error("Erreur lors de la fonction tagall:", e);
+        reply("❌ Une erreur est survenue lors de la tentative de mention de tous les membres.");
+    }
 });
 
 
