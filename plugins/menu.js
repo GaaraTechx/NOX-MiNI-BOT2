@@ -52,7 +52,7 @@ async(conn, mek, m, { from, pushname, reply, isOwner, myquoted }) => {
         let menu = `
 ╭━━━〔 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻 〕━━━┈
 ┃
-┃ 👤 *𝚄𝚂𝙴𝚁:* ${ushname}
+┃ 👤 *𝚄𝚂𝙴𝚁:* ${pushname}
 ┃ 👑 *𝚂𝚃𝙰𝚃𝚄𝚃:* ${isOwner ? 'OWNER': 'USER'}
 ┃ 
 ┃ ⏳ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${uptimeString}
