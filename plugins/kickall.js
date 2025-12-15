@@ -96,3 +96,41 @@ cmd({
         text: finalMessage
     }, { quoted: myquoted });
 });
+
+
+
+// JawadTechX
+
+cmd({
+    pattern: "leave",
+    alias: ["left", "leftgc", "leavegc"],
+    desc: "Leave the group",
+    react: "🎉",
+    category: "owner",
+    filename: __filename
+},
+async (conn, mek, m, {
+    from, quoted, body, isCmd, command, args, q, isGroup, senderNumber, reply
+}) => {
+    try {
+
+        if (!isGroup) {
+            return reply("This command can only be used in groups.");
+        }
+        
+
+        const botOwner = conn.user.id.split(":")[0]; 
+        if (senderNumber !== botOwner) {
+            return reply("𝙾𝙽𝙻𝚈 𝙾𝚆𝙽𝙴𝚁 𝙱𝚁𝙾.");
+        }
+
+        reply("𝙻𝙴𝙰𝚅𝙸𝙽𝙶 𝙶𝚁𝙾𝚄𝙿...");
+        await sleep(1500);
+        await conn.groupLeave(from);
+        reply("𝙶𝙾𝙾𝙳𝙱𝚈𝙴 ! 🥲");
+    } catch (e) {
+        console.error(e);
+        reply(`❌ Error: ${e}`);
+    }
+});
+
