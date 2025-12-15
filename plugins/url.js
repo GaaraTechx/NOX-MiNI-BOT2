@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
-const { sms } = require('../lib/msg');
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 
 // Upload sur Catbox.moe
 const uploadToCatbox = async (filePath) => {
@@ -23,7 +23,7 @@ const uploadToCatbox = async (filePath) => {
     }
 };
 
-// Fonction pour convertir bytes en format lisible
+// Convertir bytes en format lisible
 const formatBytes = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -32,41 +32,42 @@ const formatBytes = (bytes) => {
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 };
 
-// Fonction pour envoyer style typewriter (fancy)
+// Texte fancy typewriter
 const fancyText = (text) => {
-    return `\`\`\`\n${text}\n\`\`\``; // entre ``` pour monospace / typewriter
+    return `\`\`\`\n${text}\n\`\`\``;
 };
 
-        cmd({
+cmd({
     pattern: "url",
     alias: ["geturl"],
     desc: "Transforme un média en URL via Catbox.moe et affiche infos fancy",
     category: "Tools",
     react: "🔗"
 }, async (conn, mek, m, { reply }) => {
-    if (!m.quoted || !m.quoted.message) 
-        return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
-
-    const qMsg = m.quoted.message;
-    const mtype = Object.keys(qMsg)[0]; // ex: imageMessage, videoMessage, audioMessage, documentMessage
-
-    const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(mtype);
-    if (!isMedia) return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
-
     try {
+        if (!m.quoted || !m.quoted.message) 
+            return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
+
+        const qMsg = m.quoted.message;
+
+        // Détection du type de média
+        const mtype = Object.keys(qMsg)[0]; // imageMessage, videoMessage, audioMessage, documentMessage, etc.
+        const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(mtype);
+        if (!isMedia) return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
+
         // Télécharger le média
-        const stream = await conn.downloadMediaMessage(qMsg[mtype]);
+        const stream = await downloadContentFromMessage(qMsg[mtype], mtype.replace('Message',''));
         let buffer = Buffer.from([]);
         for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
 
-        const ext = mtype.replace('Message', '');
+        const ext = mtype.replace('Message','');
         const tempDir = path.join(__dirname, '../temp');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
         const tempFile = path.join(tempDir, `${Date.now()}.${ext}`);
         fs.writeFileSync(tempFile, buffer);
 
-        // Upload
+        // Upload sur Catbox
         const url = await uploadToCatbox(tempFile);
         fs.unlinkSync(tempFile);
 
@@ -77,8 +78,9 @@ const fancyText = (text) => {
         const type = ext.toUpperCase();
         const date = new Date().toLocaleString();
 
+        // Message fancy
         const text = fancyText(
-`📤 *𝙼𝙴𝙳𝙸𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂*
+`📤 *MEDIA UPLOAD SUCCESS*
 ╭──────────────────────────⭓
 │ 📦 SIZE : ${size}
 │ 🎞️ TYPE : ${type}
