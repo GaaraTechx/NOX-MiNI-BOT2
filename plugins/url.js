@@ -1,99 +1,85 @@
-const { cmd } = require('../command');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+const axios = require("axios");
 const FormData = require('form-data');
-const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
-
-// Upload sur Catbox.moe
-const uploadToCatbox = async (filePath) => {
-    try {
-        const formData = new FormData();
-        formData.append('reqtype', 'fileupload');
-        formData.append('fileToUpload', fs.createReadStream(filePath));
-
-        const res = await axios.post('https://catbox.moe/user/api.php', formData, {
-            headers: formData.getHeaders()
-        });
-
-        return res.data;
-    } catch (err) {
-        console.error(err);
-        return null;
-    }
-};
-
-// Convertir bytes en format lisible
-const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
-};
-
-// Texte fancy typewriter
-const fancyText = (text) => {
-    return `\`\`\`\n${text}\n\`\`\``;
-};
+const fs = require('fs');
+const os = require('os');
+const path = require("path");
+const { cmd, commands } = require("../command");
 
 cmd({
-    pattern: "url",
-    alias: ["geturl"],
-    desc: "Transforme un média en URL via Catbox.moe et affiche infos fancy",
-    category: "Tools",
-    react: "🔗"
-}, async (conn, mek, m, { reply }) => {
-    try {
-        if (!m.quoted || !m.quoted.message) 
-            return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
-
-        const qMsg = m.quoted.message;
-
-        // Détection du type de média
-        const mtype = Object.keys(qMsg)[0]; // imageMessage, videoMessage, audioMessage, documentMessage, etc.
-        const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(mtype);
-        if (!isMedia) return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
-
-        // Télécharger le média
-        const stream = await downloadContentFromMessage(qMsg[mtype], mtype.replace('Message',''));
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-
-        const ext = mtype.replace('Message','');
-        const tempDir = path.join(__dirname, '../temp');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-
-        const tempFile = path.join(tempDir, `${Date.now()}.${ext}`);
-        fs.writeFileSync(tempFile, buffer);
-
-        // Upload sur Catbox
-        const url = await uploadToCatbox(tempFile);
-        fs.unlinkSync(tempFile);
-
-        if (!url) return reply("❌ Erreur lors de l'upload sur Catbox.moe");
-
-        // Infos média
-        const size = formatBytes(buffer.length);
-        const type = ext.toUpperCase();
-        const date = new Date().toLocaleString();
-
-        // Message fancy
-        const text = fancyText(
-`📤 *MEDIA UPLOAD SUCCESS*
-╭──────────────────────────⭓
-│ 📦 SIZE : ${size}
-│ 🎞️ TYPE : ${type}
-│ 🗓️ DATE : ${date}
-│ 🔗 URL  : ${url}
-╰──────────────────────────⭓
-> POWERED BY NOX MINI BOT`
-        );
-
-        await conn.sendMessage(m.chat, { text }, { quoted: m });
-
-    } catch (err) {
-        console.error(err);
-        reply("❌ Une erreur est survenue lors du traitement du média");
+  'pattern': "tourl",
+  'alias': ["imgtourl", "imgurl", "url", "geturl", "upload"],
+  'react': '🖇',
+  'desc': "Convert media to Catbox URL",
+  'category': "tools",
+  'use': ".tourl [reply to media]",
+  'filename': __filename
+}, async (client, message, args, { reply }) => {
+  try {
+    // Check if quoted message exists and has media
+    const quotedMsg = message.quoted ? message.quoted : message;
+    const mimeType = (quotedMsg.msg || quotedMsg).mimetype || '';
+    
+    if (!mimeType) {
+      throw "ᴘʟᴇᴀsᴇ ʀᴇᴘʟʏ ᴛᴏ ᴀɴ ɪᴍᴀɢᴇ, ᴠɪᴅᴇᴏ, ᴏʀ ᴀᴜᴅɪᴏ ғɪʟᴇ";
     }
+
+    // Download the media
+    const mediaBuffer = await quotedMsg.download();
+    const tempFilePath = path.join(os.tmpdir(), `catbox_upload_${Date.now()}`);
+    fs.writeFileSync(tempFilePath, mediaBuffer);
+
+    // Get file extension based on mime type
+    let extension = '';
+    if (mimeType.includes('image/jpeg')) extension = '.jpg';
+    else if (mimeType.includes('image/png')) extension = '.png';
+    else if (mimeType.includes('video')) extension = '.mp4';
+    else if (mimeType.includes('audio')) extension = '.mp3';
+    
+    const fileName = `file${extension}`;
+
+    // Prepare form data for Catbox
+    const form = new FormData();
+    form.append('fileToUpload', fs.createReadStream(tempFilePath), fileName);
+    form.append('reqtype', 'fileupload');
+
+    // Upload to Catbox
+    const response = await axios.post("https://catbox.moe/user/api.php", form, {
+      headers: form.getHeaders()
+    });
+
+    if (!response.data) {
+      throw "Error uploading to Catbox";
+    }
+
+    const mediaUrl = response.data;
+    fs.unlinkSync(tempFilePath);
+
+    // Determine media type for response
+    let mediaType = 'File';
+    if (mimeType.includes('image')) mediaType = 'Image';
+    else if (mimeType.includes('video')) mediaType = 'Video';
+    else if (mimeType.includes('audio')) mediaType = 'Audio';
+
+    // Send response
+    await reply(
+      `*${mediaType} ᴜᴘʟᴏᴀᴅᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*\n\n` +
+      `*Size:* ${formatBytes(mediaBuffer.length)}\n` +
+      `*URL:* ${mediaUrl}\n\n` +
+      `> © ᴜᴘʟᴏᴀᴅᴇᴅ ʙʏ ᴅʏʙʏ ᴛᴇᴄʜ `
+    );
+
+  } catch (error) {
+    console.error(error);
+    await reply(`Error: ${error.message || error}`);
+  }
 });
+
+// Helper function to format bytes
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+          }
+      
