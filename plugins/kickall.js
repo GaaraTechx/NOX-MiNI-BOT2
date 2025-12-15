@@ -11,9 +11,7 @@ cmd({
 
     const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net';
     const botData = groupMetadata.participants.find(p => p.id === botId);
-    if (!botData || !botData.admin) {
-        return reply("Le bot doit être admin.");
-    }
+    
 
 
     const targets = groupMetadata.participants
