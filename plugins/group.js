@@ -81,10 +81,10 @@ async (conn, mek, m, { reply, args, from, isGroup, isAdmin }) => {
         const isAdmin = member.admin === 'admin' || member.admin === 'superadmin';
         
         // Ajouter l'emoji ✰ devant les admins
-        const adminEmoji = isAdmin ? "✰ " : "";
+        const adminEmoji = isAdmin ? "✰ 𝑨𝑫𝑴𝑰𝑵 " : "";
         
         // Ajouter le préfixe et le numéro à la liste du message
-        messageText += `${adminEmoji}@${jid}\n`;
+        messageText += `@${jid} ${adminEmoji}\n`;
         
         // Ajouter l'ID complet (JID) à la liste des mentions pour que WhatsApp les reconnaisse
         mentions.push(member.id);
