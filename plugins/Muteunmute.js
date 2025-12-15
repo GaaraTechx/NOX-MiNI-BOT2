@@ -7,7 +7,7 @@ const { cmd } = require('../command');
 
 cmd({
     pattern: "open",
-    alias: ["unlock", "ouvrir"],
+    alias: ["unlock", "unmute", "ouvrir"],
     desc: "Ouvre le groupe (permet aux membres de chatter) avec hidetag.",
     category: "admin",
     react: "🔓"
@@ -17,7 +17,7 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
     
     // --- VÉRIFICATION UTILISATEUR (Owner ou Admin) ---
     // Utilisation de la variable 'isAdmin' fournie par le framework pour l'utilisateur
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmins) {
         return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
     }
 
@@ -26,11 +26,8 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
     
     // Recherche le statut du bot dans les métadonnées de groupe (pour contourner le problème m.isBotAdmin)
     const botStatus = groupMetadata.participants.find(p => p.id.includes(botId.split('@')[0])); 
-    const isBotAdminManual = botStatus && (botStatus.admin || botStatus.isAdmin); // S'adapte aux différents noms de champs possibles
-
-    if (!isBotAdminManual) { 
-        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande. Veuillez m'ajouter comme admin.");
-    }
+    
+    
     // --------------------------------------------------
 
     try {
@@ -62,7 +59,7 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
 
 cmd({
     pattern: "close",
-    alias: ["lock", "fermer"],
+    alias: ["lock", "mute", "fermer"],
     desc: "Ferme le groupe (seuls les Admins peuvent chatter).",
     category: "admin",
     react: "🔒"
@@ -71,18 +68,15 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
     
     // --- VÉRIFICATION UTILISATEUR (Owner ou Admin) ---
     // Utilisation de la variable 'isAdmin' fournie par le framework pour l'utilisateur
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmins) {
         return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
     }
     
     // --- VÉRIFICATION BOT ADMIN MANUELLE ---
     const botId = conn.user.jid || conn.user.id; 
     const botStatus = groupMetadata.participants.find(p => p.id.includes(botId.split('@')[0]));
-    const isBotAdminManual = botStatus && (botStatus.admin || botStatus.isAdmin);
     
-    if (!isBotAdminManual) { 
-        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande. Veuillez m'ajouter comme admin.");
-    }
+    
     // --------------------------------------------------
 
     try {
