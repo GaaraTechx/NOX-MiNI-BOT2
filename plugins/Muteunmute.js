@@ -36,8 +36,7 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
         // 'not_announcement' met le groupe en mode normal/ouvert
         await conn.groupSettingUpdate(from, 'not_announcement');
         
-        const finalMessage = "📢 GROUPE OUVERT MAINTENANT. VOUS POUVEZ ENVOYER DES MESSAGES.";
-        
+        const finalMessage = "𝙶𝚁𝙾𝚄𝙿 𝙾𝙿𝙴𝙽 🟢";
         // Récupérer tous les IDs des participants pour les mentions
         const participants = groupMetadata.participants.map(p => p.id);
 
@@ -85,8 +84,7 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
         // 'announcement' met le groupe en mode "Seuls les admins peuvent envoyer des messages"
         await conn.groupSettingUpdate(from, 'announcement');
         
-        const finalMessage = "🚫 GROUPE FERMÉ MAINTENANT. SEULS LES ADMINS PEUVENT ENVOYER DES MESSAGES.";
-        
+        const finalMessage = "𝙶𝚁𝙾𝚄𝙿 𝙲𝙻𝙾𝚂𝙴 🔴";
         // Envoyer le message sans hidetag
         await conn.sendMessage(from, { 
             text: finalMessage
