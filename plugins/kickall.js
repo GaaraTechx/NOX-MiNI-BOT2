@@ -1,5 +1,5 @@
 const { cmd } = require('../command');
-
+const config = require('../config');
 cmd({
     pattern: "purge",
     category: "admin",
