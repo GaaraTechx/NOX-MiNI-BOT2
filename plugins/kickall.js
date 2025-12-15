@@ -5,7 +5,7 @@ cmd({
     pattern: "purge",
     alias: ["vider", "kickall2"],
     desc: "Expulse tous les membres d'un groupe, à l'exception des admins et de l'Owner du bot.",
-    category: "admin",
+    category: "group",
     react: "💨"
 }, async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, mcli, myquoted }) => {
     
