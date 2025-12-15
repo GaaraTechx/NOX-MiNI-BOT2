@@ -85,17 +85,11 @@ async(conn, mek, m, { from, q, reply, myquoted }) => {
         // --- 2. Construction du Caption avec le style Typewriter ---
         
         // Formattage des stats
-        const likes = data.likes ? data.likes.toLocaleString('fr-FR') : 'N/A';
-        const views = data.views ? data.views.toLocaleString('fr-FR') : 'N/A';
-        const timestamp = data.timestamp ? new Date(data.timestamp * 1000).toLocaleString('fr-FR') : 'N/A';
-        const twTimestamp = timestamp;
+        
         
         let caption = `
 ╭━━━〔 𝐈𝐍𝐒𝐓𝐀𝐆𝐑𝐀𝐌 𝐃𝐋 〕━━━┈
 ┃ 🔗 *𝐋𝐈𝐄𝐍 :* ${targetUrl}
-┃ 🤍 *𝐋𝐈𝐊𝐄𝐒 :* ${likes}
-┃ 👁️ *𝐕𝐔𝐄𝐒 :* ${views}
-┃ 🗓️ *𝐏𝐔𝐁𝐋𝐈𝐄 𝐋𝐄 :* ${twTimestamp}
 ╰━━━━━━━━━━━━━━━━━┈
 `;
         
