@@ -1,5 +1,6 @@
-const { cmd } = require('../command');
 const config = require('../config');
+const { cmd } = require('../command');
+
 // ---------------------------------------------
 // --- 1. Commande : !open (Ouvrir le Groupe) ---
 // ---------------------------------------------
@@ -11,18 +12,26 @@ cmd({
     category: "admin",
     react: "🔓"
 },
+// Les variables isOwner, isAdmin et groupMetadata sont reçues ici.
 async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) => {
     
-    // --- VÉRIFICATION D'AUTORISATION ---
-    // Vérifie si l'utilisateur est Owner du Bot OU Admin du Groupe
+    // --- VÉRIFICATION UTILISATEUR (Owner ou Admin) ---
+    // Utilisation de la variable 'isAdmin' fournie par le framework pour l'utilisateur
     if (!isOwner && !isAdmin) {
         return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
     }
+
+    // --- VÉRIFICATION BOT ADMIN MANUELLE ---
+    const botId = conn.user.jid || conn.user.id; 
     
-    // Vérifie si le Bot est Admin (nécessaire pour changer les paramètres)
-    if (!m.isBotAdmin) { 
-        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande.");
+    // Recherche le statut du bot dans les métadonnées de groupe (pour contourner le problème m.isBotAdmin)
+    const botStatus = groupMetadata.participants.find(p => p.id.includes(botId.split('@')[0])); 
+    const isBotAdminManual = botStatus && (botStatus.admin || botStatus.isAdmin); // S'adapte aux différents noms de champs possibles
+
+    if (!isBotAdminManual) { 
+        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande. Veuillez m'ajouter comme admin.");
     }
+    // --------------------------------------------------
 
     try {
         await reply("⏳ Tentative d'ouverture du groupe...");
@@ -33,7 +42,6 @@ async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) 
         const finalMessage = "📢 GROUPE OUVERT MAINTENANT. VOUS POUVEZ ENVOYER DES MESSAGES.";
         
         // Récupérer tous les IDs des participants pour les mentions
-        // IMPORTANT: La structure de groupMetadata dépend de votre framework WA.
         const participants = groupMetadata.participants.map(p => p.id);
 
         // Envoyer le message en hidetag (avec l'option mentions)
@@ -59,18 +67,23 @@ cmd({
     category: "admin",
     react: "🔒"
 },
-async(conn, mek, m, { from, reply, isOwner, isAdmin, myquoted }) => {
+async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) => {
     
-    // --- VÉRIFICATION D'AUTORISATION ---
-    // Vérifie si l'utilisateur est Owner du Bot OU Admin du Groupe
+    // --- VÉRIFICATION UTILISATEUR (Owner ou Admin) ---
+    // Utilisation de la variable 'isAdmin' fournie par le framework pour l'utilisateur
     if (!isOwner && !isAdmin) {
         return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
     }
     
-    // Vérifie si le Bot est Admin (nécessaire pour changer les paramètres)
-    if (!m.isBotAdmin) { 
-        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande.");
+    // --- VÉRIFICATION BOT ADMIN MANUELLE ---
+    const botId = conn.user.jid || conn.user.id; 
+    const botStatus = groupMetadata.participants.find(p => p.id.includes(botId.split('@')[0]));
+    const isBotAdminManual = botStatus && (botStatus.admin || botStatus.isAdmin);
+    
+    if (!isBotAdminManual) { 
+        return reply("❌ Je dois être administrateur du groupe pour exécuter cette commande. Veuillez m'ajouter comme admin.");
     }
+    // --------------------------------------------------
 
     try {
         await reply("⏳ Tentative de fermeture du groupe...");
