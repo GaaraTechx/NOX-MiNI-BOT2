@@ -8,22 +8,20 @@ const { cmd } = require('../command');
 // --------------------------------------------------
 
 cmd({
-    pattern: "kickall",
-    alias: ["vider", "purge"],
+    pattern: "purge",
+    alias: ["vider", "kickall2"],
     desc: "Expulse tous les membres d'un groupe, à l'exception des admins et de l'Owner du bot.",
     category: "admin",
     react: "💨"
 }, async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, mcli, myquoted }) => {
     
     // 1. Vérification d'Autorisation (Owner du Bot ou Admin du Groupe)
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmins) {
         return reply("❌ Only the Bot Owner or a Group Admin can use this command.");
     }
     
     // 2. Vérification du Bot Admin (Nécessaire pour kick)
-    if (!m.isBotAdmin) { 
-        return reply("❌ I must be an administrator of the group to execute this command.");
-    }
+    
 
     // 3. Préparation et récupération des participants
     if (!groupMetadata || !groupMetadata.participants || groupMetadata.participants.length === 0) {
