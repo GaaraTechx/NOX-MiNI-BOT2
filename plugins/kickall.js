@@ -115,14 +115,13 @@ async (conn, mek, m, {
     try {
 
         if (!isGroup) {
-            return reply("This command can only be used in groups.");
+            return reply("𝙾𝙽𝙻𝚈 𝙶𝚁𝙾𝚄𝙿 𝙱𝚁𝙾.");
         }
         
 
-        const botOwner = conn.user.id.split(":")[0]; 
-        if (senderNumber !== botOwner) {
-            return reply("𝙾𝙽𝙻𝚈 𝙾𝚆𝙽𝙴𝚁 𝙱𝚁𝙾.");
-        }
+        if (!isOwner) {
+        return reply("𝚈𝙾𝚄 𝙰𝚁𝙴 𝙽𝙾𝚃 𝙼𝚈 𝙾𝚆𝙽𝙴𝚁 🤧");
+    }
 
         reply("𝙻𝙴𝙰𝚅𝙸𝙽𝙶 𝙶𝚁𝙾𝚄𝙿...");
         await sleep(1500);
