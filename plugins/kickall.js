@@ -101,35 +101,3 @@ cmd({
 
 // JawadTechX
 
-cmd({
-    pattern: "leave",
-    alias: ["left", "leftgc", "leavegc"],
-    desc: "Leave the group",
-    react: "🎉",
-    category: "owner",
-    filename: __filename
-},
-async (conn, mek, m, {
-    from, quoted, body, isCmd, command, args, q, isGroup, senderNumber, reply
-}) => {
-    try {
-
-        if (!isGroup) {
-            return reply("𝙾𝙽𝙻𝚈 𝙶𝚁𝙾𝚄𝙿 𝙱𝚁𝙾.");
-        }
-        
-
-        if (!isOwner) {
-        return reply("𝚈𝙾𝚄 𝙰𝚁𝙴 𝙽𝙾𝚃 𝙼𝚈 𝙾𝚆𝙽𝙴𝚁 🤧");
-    }
-
-        reply("𝙻𝙴𝙰𝚅𝙸𝙽𝙶 𝙶𝚁𝙾𝚄𝙿...");
-        await sleep(1500);
-        await conn.groupLeave(from);
-        reply("𝙶𝙾𝙾𝙳𝙱𝚈𝙴 ! 🥲");
-    } catch (e) {
-        console.error(e);
-        reply(`❌ Error: ${e}`);
-    }
-});
-
