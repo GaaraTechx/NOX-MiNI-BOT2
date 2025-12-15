@@ -37,25 +37,29 @@ const fancyText = (text) => {
     return `\`\`\`\n${text}\n\`\`\``; // entre ``` pour monospace / typewriter
 };
 
-cmd({
+        cmd({
     pattern: "url",
     alias: ["geturl"],
     desc: "Transforme un média en URL via Catbox.moe et affiche infos fancy",
     category: "Tools",
     react: "🔗"
 }, async (conn, mek, m, { reply }) => {
-    const quoted = m.quoted;
-    if (!quoted) return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
+    if (!m.quoted || !m.quoted.message) 
+        return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
 
-    const message = sms(conn, quoted);
+    const qMsg = m.quoted.message;
+    const mtype = Object.keys(qMsg)[0]; // ex: imageMessage, videoMessage, audioMessage, documentMessage
 
-    const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(message.mtype);
+    const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(mtype);
     if (!isMedia) return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
 
     try {
         // Télécharger le média
-        const buffer = await conn.downloadMediaMessage(message.msg);
-        const ext = message.mtype.replace('Message', '');
+        const stream = await conn.downloadMediaMessage(qMsg[mtype]);
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+
+        const ext = mtype.replace('Message', '');
         const tempDir = path.join(__dirname, '../temp');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
@@ -66,28 +70,25 @@ cmd({
         const url = await uploadToCatbox(tempFile);
         fs.unlinkSync(tempFile);
 
-        if (!url) return reply("❌ 𝙴𝚁𝚁𝙾𝚁 𝚃𝚁𝚈 𝙰𝙶𝙰𝙸𝙽 𝙱𝚁𝙾");
+        if (!url) return reply("❌ Erreur lors de l'upload sur Catbox.moe");
 
         // Infos média
-        const stats = fs.statSync(tempFile);
         const size = formatBytes(buffer.length);
         const type = ext.toUpperCase();
         const date = new Date().toLocaleString();
 
-        // Message fancy
         const text = fancyText(
-`📤 *𝙼𝙴𝙳𝙸𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝙵𝚄𝙻𝙻𝚈*
+`📤 *𝙼𝙴𝙳𝙸𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂*
 ╭──────────────────────────⭓
-│ 📦 𝚂𝙸𝚉𝙴 : ${size}
-│ 🎞️ 𝚃𝚈𝙿𝙴 : ${type}
-│ 🗓️ 𝙳𝙰𝚃𝙴 : ${date}
-│ 🔗 𝚄𝚁𝙻 :
-│ ${url}
+│ 📦 SIZE : ${size}
+│ 🎞️ TYPE : ${type}
+│ 🗓️ DATE : ${date}
+│ 🔗 URL  : ${url}
 ╰──────────────────────────⭓
-> 𝑷𝑶𝑾𝑬𝑹𝑬𝑫 𝑩𝒀 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`
+> POWERED BY NOX MINI BOT`
         );
 
-        await conn.sendMessage(message.chat, { text }, { quoted: m });
+        await conn.sendMessage(m.chat, { text }, { quoted: m });
 
     } catch (err) {
         console.error(err);
