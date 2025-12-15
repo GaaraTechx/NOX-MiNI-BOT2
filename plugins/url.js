@@ -5,74 +5,79 @@ const fs = require('fs');
 const path = require('path');
 
 cmd({
-    pattern: "catbox",
-    desc: "Uploader un média vers Catbox.moe",
+    pattern: "url",
+    alias: ["to url"],
+    desc: "Uploader un média et obtenir une URL",
     category: "TOOL",
-    react: "📤"
+    react: "🔗"
 }, async (socket, mek, m, { reply, from }) => {
 
     try {
-        // 🔎 Vérification média
-        const quoted = m.quoted || m;
-        const mime = (quoted.msg || quoted).mimetype;
+        // 📌 média cité ou message direct
+        const msg = m.quoted ? m.quoted : m;
 
-        if (!mime) {
-            return reply("📤 *UTILISATION*\nRéponds à une image / vidéo / audio / fichier.");
+        if (!msg.mtype || !msg.msg || !msg.msg.mimetype) {
+            return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
         }
 
-        // ⏳ Téléchargement média
-        reply("⏳ Upload en cours vers Catbox...");
-        const buffer = await quoted.download();
+        const mime = msg.msg.mimetype;
 
-        // 📂 Fichier temporaire
-        const ext = mime.split("/")[1];
-        const tempFile = path.join(__dirname, `../temp_${Date.now()}.${ext}`);
-        fs.writeFileSync(tempFile, buffer);
+        // ⏳
+        reply("⏳ Upload en cours...");
 
-        // 📡 FormData Catbox
+        // ⬇️ téléchargement (fonction native Baileys)
+        const buffer = await msg.download();
+        if (!buffer) return reply("❌ Impossible de télécharger le média.");
+
+        // 📂 fichier temporaire
+        const ext = mime.split("/")[1] || "bin";
+        const tempPath = path.join(__dirname, `../temp_${Date.now()}.${ext}`);
+        fs.writeFileSync(tempPath, buffer);
+
+        // 📤 Catbox upload
         const form = new FormData();
         form.append("reqtype", "fileupload");
-        form.append("fileToUpload", fs.createReadStream(tempFile));
+        form.append("fileToUpload", fs.createReadStream(tempPath));
 
-        // 🌐 Envoi Catbox
         const res = await axios.post(
             "https://catbox.moe/user/api.php",
             form,
             { headers: form.getHeaders() }
         );
 
-        const url = res.data.trim();
+        const mediaUrl = res.data.trim();
+
+        // 🧾 MEDIA TYPE basé sur mtype
+        let mediaType = "FILE";
+        if (msg.mtype === "imageMessage") mediaType = "IMAGE";
+        else if (msg.mtype === "videoMessage") mediaType = "VIDEO";
+        else if (msg.mtype === "audioMessage") mediaType = "AUDIO";
+        else if (msg.mtype === "documentMessage") mediaType = "DOCUMENT";
 
         // 🗓️ Date Haïti
-        const date = new Date().toLocaleString("fr-FR", {
+        const uploadDate = new Date().toLocaleString("fr-FR", {
             timeZone: "America/Port-au-Prince"
         });
 
-        // 🧾 Type média lisible
-        let mediaType = "FILE";
-        if (mime.startsWith("image")) mediaType = "IMAGE";
-        else if (mime.startsWith("video")) mediaType = "VIDEO";
-        else if (mime.startsWith("audio")) mediaType = "AUDIO";
-
-        // 📤 Réponse
+        // 📤 réponse finale
         await socket.sendMessage(from, {
             text:
 `📤 *𝑼𝑷𝑳𝑶𝑨𝑫 𝑴𝑬𝑫𝑰𝑨*
 ╭──────────────────────────⭓
 │ 📁 𝙼𝙴𝙳𝙸𝙰 𝚃𝚈𝙿𝙴 : ${mediaType}
 │ 🔗 𝚄𝚁𝙻 𝙼𝙴𝙳𝙸𝙰 :
-│ ${resultUrl}
+│ ${mediaUrl}
 │ 📅 𝚄𝙿𝙻𝙾𝙰𝙳 𝙳𝙰𝚃𝙴 :
 │ ${uploadDate}
 ╰──────────────────────────⭓
-> 𝑷𝑶𝑾𝑬𝑹𝑬𝑫 𝑩𝒀 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰`
+> 𝑷𝑶𝑾𝑬𝑹𝑬𝑫 𝑩𝒀 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`
         });
 
-        // 🧹 Nettoyage
-        fs.unlinkSync(tempFile);
+        // 🧹 clean
+        fs.unlinkSync(tempPath);
 
     } catch (err) {
         console.error(err);
-        reply("❌ Erreur lors de l’upload Catbox.");
+        reply("❌ Erreur pendant l’upload.");
     }
 });
