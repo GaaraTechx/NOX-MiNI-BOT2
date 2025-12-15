@@ -1,83 +1,58 @@
-const { cmd } = require('../command');
 const axios = require('axios');
-const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
+const { sms } = require('../msg'); // ton fichier msg.js
 
-cmd({
-    pattern: "url",
-    alias: ["to url"],
-    desc: "Uploader un média et obtenir une URL",
-    category: "TOOL",
-    react: "🔗"
-}, async (socket, mek, m, { reply, from }) => {
+const uploadToCatbox = async (filePath) => {
+    try {
+        const formData = new FormData();
+        formData.append('reqtype', 'fileupload');
+        formData.append('fileToUpload', fs.createReadStream(filePath));
+
+        const res = await axios.post('https://catbox.moe/user/api.php', formData, {
+            headers: formData.getHeaders()
+        });
+
+        return res.data; // renvoie l'URL Catbox
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+};
+
+const urlPlugin = async (conn, rawMessage) => {
+    const m = sms(conn, rawMessage);
+
+    // Vérifier si c'est un média
+    const isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'].includes(m.mtype);
+
+    if (!isMedia) {
+        return m.reply("⚠️ Veuillez envoyer un média pour obtenir une URL !");
+    }
 
     try {
-        // 📌 média cité ou message direct
-        const msg = m.quoted ? m.quoted : m;
+        // Téléchargement du média depuis WhatsApp
+        const buffer = await conn.downloadMediaMessage(m.msg);
+        const ext = m.mtype.replace('Message', ''); // image, video, audio, document
+        const tempFile = path.join(__dirname, `../temp/${Date.now()}.${ext}`);
+        
+        fs.writeFileSync(tempFile, buffer);
 
-        if (!msg.mtype || !msg.msg || !msg.msg.mimetype) {
-            return reply("🔗 Réponds à un média (image, vidéo, audio, document).");
+        // Upload sur Catbox.moe
+        const url = await uploadToCatbox(tempFile);
+
+        fs.unlinkSync(tempFile); // Supprime le fichier temporaire
+
+        if (url) {
+            m.reply(`✅ Voici ton URL : ${url}`);
+        } else {
+            m.reply("❌ Erreur lors de l'upload sur Catbox.moe");
         }
-
-        const mime = msg.msg.mimetype;
-
-        // ⏳
-        reply("⏳ Upload en cours...");
-
-        // ⬇️ téléchargement (fonction native Baileys)
-        const buffer = await msg.download();
-        if (!buffer) return reply("❌ Impossible de télécharger le média.");
-
-        // 📂 fichier temporaire
-        const ext = mime.split("/")[1] || "bin";
-        const tempPath = path.join(__dirname, `../temp_${Date.now()}.${ext}`);
-        fs.writeFileSync(tempPath, buffer);
-
-        // 📤 Catbox upload
-        const form = new FormData();
-        form.append("reqtype", "fileupload");
-        form.append("fileToUpload", fs.createReadStream(tempPath));
-
-        const res = await axios.post(
-            "https://catbox.moe/user/api.php",
-            form,
-            { headers: form.getHeaders() }
-        );
-
-        const mediaUrl = res.data.trim();
-
-        // 🧾 MEDIA TYPE basé sur mtype
-        let mediaType = "FILE";
-        if (msg.mtype === "imageMessage") mediaType = "IMAGE";
-        else if (msg.mtype === "videoMessage") mediaType = "VIDEO";
-        else if (msg.mtype === "audioMessage") mediaType = "AUDIO";
-        else if (msg.mtype === "documentMessage") mediaType = "DOCUMENT";
-
-        // 🗓️ Date Haïti
-        const uploadDate = new Date().toLocaleString("fr-FR", {
-            timeZone: "America/Port-au-Prince"
-        });
-
-        // 📤 réponse finale
-        await socket.sendMessage(from, {
-            text:
-`📤 *𝑼𝑷𝑳𝑶𝑨𝑫 𝑴𝑬𝑫𝑰𝑨*
-╭──────────────────────────⭓
-│ 📁 𝙼𝙴𝙳𝙸𝙰 𝚃𝚈𝙿𝙴 : ${mediaType}
-│ 🔗 𝚄𝚁𝙻 𝙼𝙴𝙳𝙸𝙰 :
-│ ${mediaUrl}
-│ 📅 𝚄𝙿𝙻𝙾𝙰𝙳 𝙳𝙰𝚃𝙴 :
-│ ${uploadDate}
-╰──────────────────────────⭓
-> 𝑷𝑶𝑾𝑬𝑹𝑬𝑫 𝑩𝒀 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`
-        });
-
-        // 🧹 clean
-        fs.unlinkSync(tempPath);
 
     } catch (err) {
         console.error(err);
-        reply("❌ Erreur pendant l’upload.");
+        m.reply("❌ Une erreur est survenue lors du traitement du média");
     }
-});
+};
+
+module.exports = { urlPlugin };
