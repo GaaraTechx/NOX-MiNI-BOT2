@@ -38,7 +38,7 @@ async function downloadMediaToBuffer(m) {
 // ENREGISTREMENT DE LA COMMANDE
 // ==============================================================================
 
-events.addCommand({
+cmd({
     pattern: ['url'],
     alias: ['tourl'],
     desc: 'Télécharge le média cité (photo, vidéo, audio) sur Catbox.moe.',
