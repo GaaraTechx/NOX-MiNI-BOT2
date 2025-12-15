@@ -1,5 +1,40 @@
-const { cmd } = require('../command');
+const { cmd } = require("../command");
 const axios = require("axios");
+const fs = require("fs");
+
+cmd({
+  pattern: "fluxai",
+  alias: ["flux", "imagine"],
+  react: "🚀",
+  desc: "Generate an image using AI.",
+  category: "AI",
+  filename: __filename
+}, async (conn, mek, m, { q, reply }) => {
+  try {
+    if (!q) return reply("𝙿𝙻𝙴𝙰𝚂𝙴 𝙿𝚁𝙾𝚅𝙸𝙳 𝙰 𝙿𝚁𝙾𝙼𝙿𝚃.");
+
+    await reply(" *⏳ 𝚆𝙰𝙸𝚃 𝙵𝙾𝚁 𝙼𝙴 𝙱𝚁𝙾 ...🔥*");
+
+    const apiUrl = `https://api.siputzx.my.id/api/ai/flux?prompt=${encodeURIComponent(q)}`;
+
+    const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
+
+    if (!response || !response.data) {
+      return reply("Error: The API did not return a valid image. Try again later.");
+    }
+
+    const imageBuffer = Buffer.from(response.data, "binary");
+
+    await conn.sendMessage(m.chat, {
+      image: imageBuffer,
+      caption: `> *𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝙽𝙾𝚇 𝙼𝙸𝙽𝙸 𝙱𝙾𝚃* 🚀\n✨ 𝙿𝚁𝙾𝙼𝙿𝚃 : *${q}*`
+    });
+
+  } catch (error) {
+    console.error("FluxAI Error:", error);
+    reply(`An error occurred: ${error.response?.data?.message || error.message || "Unknown error"}`);
+  }
+});
 
 cmd({
     pattern: "seaart",
