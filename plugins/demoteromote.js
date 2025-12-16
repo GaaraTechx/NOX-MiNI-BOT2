@@ -1,80 +1,78 @@
 const { cmd } = require("../command");
 const config = require("../config");
-
+// --- COMMANDE PROMOTE ---
 cmd({
   pattern: "promote",
-  alias: ["p", "giveadmin", "makeadmin"],
+  alias: ["p", "giveadmin"],
   desc: "Promote a user to admin",
   category: "group",
   react: "🔺",
   filename: __filename
 }, 
-async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata }) => {
+async(conn, mek, m, { from, reply, isOwner, isAdmins, isBotAdmin, args }) => {
     try {
-        // Correction ici : isAdmin au lieu de isAdmins
+        // Garde isAdmins avec le "s"
         if (!isOwner && !isAdmins) {
-            return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
+            return reply("❌ Seul l'Owner ou un Admin peut utiliser cette commande.");
         }
         
-        if (!m.quoted && (!m.mentionedJid || m.mentionedJid.length === 0)) {
-            return reply("❓ You did not give me a user!?");
+        
+        let user;
+        if (m.quoted) {
+            // 1. En répondant à un message
+            user = m.quoted.sender;
+        } else if (m.mentionedJid && m.mentionedJid.length > 0) {
+            // 2. Avec une mention @nom
+            user = m.mentionedJid[0];
+        } else if (args[0]) {
+            // 3. Avec le numéro (ex: .promote 50973773737)
+            user = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         }
 
-        let users = m.mentionedJid[0]
-            ? m.mentionedJid[0]
-            : m.quoted
-            ? m.quoted.sender
-            : null;
+        if (!user) return reply("❓ Réponds à quelqu'un, mentionne-le ou tape son numéro.");
 
-        if (!users) return reply("⚠️ Couldn't determine target user.");
-
-        const ownerJid = conn.user.id.split(":")[0] + '@s.whatsapp.net';
-        if (users === ownerJid) return reply("👑 ᴛʜᴀᴛ's ᴛʜᴇ *ᴏᴡɴᴇʀ's ɴᴜᴍʙᴇʀ!* ᴀʟʀᴇᴀᴅʏ ᴘᴏᴡᴇʀғᴜʟ!");
-
-        await conn.groupParticipantsUpdate(from, [users], "promote");
-        reply(`*✅ sᴜᴄᴄᴇssғᴜʟʟʏ ᴘʀᴏᴍᴏᴛᴇᴅ ᴛᴏ ᴀᴅᴍɪɴ.*`, { mentions: [users] });
+        await conn.groupParticipantsUpdate(from, [user], "promote");
+        reply(`*✅ Utilisateur promu admin.*`, { mentions: [user] });
 
     } catch (err) {
         console.error(err);
-        reply("❌ Failed to promote. Something went wrong.");
+        reply("❌ Erreur lors de la promotion.");
     }
 });
 
+// --- COMMANDE DEMOTE ---
 cmd({
   pattern: "demote",
-  alias: ["d", "dismiss", "removeadmin"],
+  alias: ["d", "removeadmin"],
   desc: "Demote a group admin",
   category: "group",
   react: "🔻",
   filename: __filename
 }, 
-async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata }) => {
+async(conn, mek, m, { from, reply, isOwner, isAdmins, isBotAdmin, args }) => {
     try {
-        // Correction ici aussi : isAdmin
+        // Garde isAdmins avec le "s"
         if (!isOwner && !isAdmins) {
-            return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
+            return reply("❌ Seul l'Owner ou un Admin peut utiliser cette commande.");
         }
         
-        if (!m.quoted && (!m.mentionedJid || m.mentionedJid.length === 0)) {
-            return reply("❓ 𝙶𝙸𝚅𝙴 𝚄𝚂𝙴𝚁 𝙱𝚁𝙾");
+        
+        let user;
+        if (m.quoted) {
+            user = m.quoted.sender;
+        } else if (m.mentionedJid && m.mentionedJid.length > 0) {
+            user = m.mentionedJid[0];
+        } else if (args[0]) {
+            user = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
         }
 
-        let users = m.mentionedJid[0]
-            ? m.mentionedJid[0]
-            : m.quoted
-            ? m.quoted.sender
-            : null;
+        if (!user) return reply("❓ Réponds à quelqu'un, mentionne-le ou tape son numéro.");
 
-        if (!users) return reply("⚠️ Couldn't determine target user.");
-
-        const ownerJid = conn.user.id.split(":")[0] + '@s.whatsapp.net';
-        if (users === ownerJid) return reply("👑 𝙸 𝙲𝙰𝙽'𝚃 𝙳𝙴𝙼𝙾𝚃𝙴 𝚃𝙷𝙴 𝙾𝚆𝙽𝙴𝚁 𝙽𝚄𝙼𝙱𝙴𝚁.");
-
-        await conn.groupParticipantsUpdate(from, [users], "demote");
-        reply(`*✅ 𝚂𝚄𝙲𝙲𝙴𝚂𝙵𝚄𝙻𝙻𝚈 𝙳𝙴𝙼𝙾𝚃𝙴*`, { mentions: [users] });
+        await conn.groupParticipantsUpdate(from, [user], "demote");
+        reply(`*✅ Administrateur destitué.*`, { mentions: [user] });
 
     } catch (err) {
         console.error(err);
-        reply("❌ Failed to demote. Something went wrong.");
+        reply("❌ Erreur lors de la destitution.");
     }
 });
