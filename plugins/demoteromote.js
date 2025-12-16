@@ -12,7 +12,7 @@ cmd({
 async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata }) => {
     try {
         // Correction ici : isAdmin au lieu de isAdmins
-        if (!isOwner && !isAdmin) {
+        if (!isOwner && !isAdmins) {
             return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
         }
         
@@ -51,7 +51,7 @@ cmd({
 async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata }) => {
     try {
         // Correction ici aussi : isAdmin
-        if (!isOwner && !isAdmin) {
+        if (!isOwner && !isAdmins) {
             return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
         }
         
