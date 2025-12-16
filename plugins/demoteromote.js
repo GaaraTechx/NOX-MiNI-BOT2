@@ -7,19 +7,13 @@ cmd({
   category: "group",
   react: "🔺",
   filename: __filename
-}, async (conn, mek, m, {
-  from,
-  isCreator,
-  isBotAdmins,
-  isAdmins,
-  isGroup,
-  quoted,
-  reply
-}) => {
-  try {
-    if (!isGroup) return reply("⚠️ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴏɴʟʏ ᴡᴏʀᴋs ɪɴ *ɢʀᴏᴜᴘs*.");
-    if (!isAdmins) return reply("🔐 𝙾𝙽𝙻𝚈 𝙶𝚁𝙾𝚄𝙿 𝙰𝙳𝙼𝙸𝙽.");
+}, 
 
+async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) => {
+     if (!isOwner && !isAdmins) {
+        return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
+    }
+    
     // Your user extraction logic
     if (!m.quoted && (!m.mentionedJid || m.mentionedJid.length === 0)) {
       return reply("❓ You did not give me a user!?");
@@ -56,20 +50,14 @@ cmd({
   category: "group",
   react: "🔻",
   filename: __filename
-}, async (conn, mek, m, {
-  from,
-  isCreator,
-  isBotAdmins,
-  isAdmins,
-  isGroup,
-  participants,
-  quoted,
-  reply
-}) => {
-  try {
-    if (!isGroup) return reply("⚠️ 𝙾𝙽𝙻𝚈 𝙶𝚁𝙾𝚄𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳.");
-    if (!isAdmins) return reply("🔐 𝙾𝙽𝙻𝚈 𝙶𝚁𝙾𝚄𝙿 𝙰𝙳𝙼𝙸𝙽.");
-
+}, 
+    
+  
+async(conn, mek, m, { from, reply, isOwner, isAdmin, groupMetadata, myquoted }) => {
+     if (!isOwner && !isAdmins) {
+        return reply("❌ Seul l'Owner du Bot ou un Administrateur du Groupe peut utiliser cette commande.");
+    }
+    
     // Your user extraction logic
     if (!m.quoted && (!m.mentionedJid || m.mentionedJid.length === 0)) {
       return reply("❓ 𝙶𝙸𝚅𝙴 𝚄𝚂𝙴𝚁 𝙱𝚁𝙾");
