@@ -3,337 +3,297 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NOX MINI BOT</title>
+  <title>NOX MINI - ETHEREAL</title>
   <link rel="icon" href="https://files.catbox.moe/6us9as.jpg" type="image/jpg">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bento+Sans:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root{
-      --bg:#050509;
-      --card-bg: rgba(255,255,255,0.03);
-      --card-border: rgba(255,255,255,0.08);
-      --accent: #00f2ea;
-      --accent-glow: rgba(0,242,234,0.18);
-      --pink:#ff66c4;
-      --muted:#9aa8bd;
-      --success:#34c759;
-      --error:#ff3b30;
-      --mono: 'JetBrains Mono', monospace;
-      --ui: 'Outfit', sans-serif;
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      font-family:var(--ui);
-      background: radial-gradient(circle at top, #1a0033, #000 70%);
-      color:#fff;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
+    :root {
+      --primary: #6366f1;
+      --secondary: #a855f7;
+      --bg: #09090b;
+      --card-bg: #121217;
+      --border: rgba(255, 255, 255, 0.08);
     }
 
-    /* Ambient lights & canvas stacking */
-    .ambient-light{
-      position:absolute;
-      width:600px;height:600px;
-      background: radial-gradient(circle, rgba(0,242,234,0.06) 0%, rgba(0,0,0,0) 70%);
-      top:50%;left:50%;transform:translate(-50%,-50%);
-      z-index:0;pointer-events:none;
-    }
-    canvas#particles{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
-
-    /* Card */
-    .interface-card{
-      position:relative;
-      z-index:10;
-      width:100%;
-      max-width:520px;
-      border-radius:20px;
-      padding:34px;
-      background:var(--card-bg);
-      border:1px solid var(--card-border);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
-    .header{display:flex;align-items:center;gap:16px;margin-bottom:22px}
-    .logo-container{width:56px;height:56px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);overflow:hidden}
-    .logo-container img{width:100%;height:100%;object-fit:cover}
-    .title-group h1{font-size:1.6rem;margin-bottom:2px;font-weight:700}
-    .title-group p{font-size:0.9rem;color:var(--muted)}
-
-    /* status */
-    .system-status{
-      display:flex;justify-content:space-between;align-items:center;
-      background: rgba(0,0,0,0.2); padding:12px 14px; border-radius:10px;
-      font-family:var(--mono); font-size:0.78rem; margin-bottom:22px; border:1px solid rgba(255,255,255,0.04);
+    /* Effet de lumière de fond */
+    .glow-bg {
+      position: absolute;
+      width: 100%; height: 100%;
+      background: 
+        radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+      z-index: -1;
     }
-    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);display:inline-block;margin-right:8px}
 
-    /* input */
-    .input-wrapper{position:relative;margin-bottom:16px}
-    .input-label{position:absolute;top:-10px;left:14px;background:#0b0b10;padding:0 6px;font-size:0.72rem;color:var(--accent);font-weight:700;border-radius:4px;z-index:2}
-    input#number{
-      width:100%; padding:14px 16px; font-family:var(--mono); font-size:1.05rem;
-      background: rgba(255,255,255,0.02); color:#fff; border-radius:12px; border:1px solid var(--card-border);
-      outline:none; letter-spacing:1px;
+    /* Conteneur de la carte avec bordure animée */
+    .card-border-wrap {
+      position: relative;
+      padding: 1px;
+      border-radius: 24px;
+      background: var(--border);
+      overflow: hidden;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    input#number:focus{box-shadow:0 0 0 6px var(--accent-glow); border-color:var(--accent); background: rgba(0,242,234,0.02)}
 
-    /* button */
-    .action-btn{
-      width:100%; padding:14px; margin-top:6px; border-radius:12px; border:none;
-      background: linear-gradient(135deg, #9b4dff, #5a00ff); color:#fff; font-weight:800; font-size:0.98rem; cursor:pointer;
-      display:flex;align-items:center;justify-content:center;gap:10px; transition:all .2s;
+    .card-border-wrap:hover {
+      transform: scale(1.02) rotateX(2deg) rotateY(-2deg);
     }
-    .action-btn:hover{transform:translateY(-3px); box-shadow:0 0 20px rgba(91,0,255,0.12)}
-    .action-btn:disabled{opacity:0.6; cursor:not-allowed; transform:none}
 
-    /* terminal output */
-    .terminal-output{margin-top:20px; min-height:70px; display:flex;flex-direction:column;align-items:center;justify-content:center}
-
-    .code-display{font-family:var(--mono); font-size:2rem; font-weight:800; color:var(--accent); letter-spacing:4px; cursor:pointer; transition:all .15s}
-    .code-display:hover{transform:scale(1.04); text-shadow:0 0 14px var(--accent)}
-
-    .copy-hint{margin-top:6px;font-size:0.75rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
-
-    /* loader (spinner) */
-    .spinner{
-      width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,0.08);border-top-color:var(--pink);animation:spin .8s linear infinite;display:none;margin:12px auto;
+    /* Ligne néon qui tourne */
+    .card-border-wrap::before {
+      content: "";
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(transparent, transparent, transparent, var(--primary), var(--secondary), transparent);
+      animation: rotate 4s linear infinite;
     }
-    @keyframes spin{to{transform:rotate(360deg)}}
 
-    .loader-txt{margin-top:8px;font-family:var(--mono);font-size:0.8rem;color:rgba(255,255,255,0.45)}
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-    .error-msg{color:var(--error);font-size:0.95rem;margin-top:8px;display:flex;align-items:center;gap:8px}
-    .success-msg{color:var(--success);font-size:0.95rem;margin-top:8px}
-
-    .footer{text-align:center;margin-top:20px;color:rgba(255,255,255,0.28);font-size:0.78rem;letter-spacing:1px}
-
-    /* toast */
-    #toast{visibility:hidden;min-width:220px;background:#0b0b0d;color:#fff;padding:12px;border-radius:10px;position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:999;border:1px solid var(--accent);box-shadow:0 0 20px rgba(0,242,234,0.12);display:flex;align-items:center;gap:10px}
-    #toast.show{visibility:visible;animation:fadein .35s, fadeout .35s 2.6s}
-    @keyframes fadein{from{bottom:8px;opacity:0}to{bottom:28px;opacity:1}} @keyframes fadeout{from{bottom:28px;opacity:1}to{bottom:8px;opacity:0}}
-
-    /* small responsive */
-    @media(max-width:480px){
-      .interface-card{padding:20px}
-      .code-display{font-size:1.5rem}
+    .main-card {
+      position: relative;
+      background: var(--card-bg);
+      width: 380px;
+      padding: 40px 30px;
+      border-radius: 23px;
+      z-index: 1;
+      text-align: center;
     }
+
+    /* Header */
+    .profile-section {
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    .avatar-ring {
+      width: 90px; height: 90px;
+      margin: 0 auto;
+      border-radius: 50%;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .avatar-ring img {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      background: var(--card-bg);
+      object-fit: cover;
+    }
+
+    h1 {
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--secondary);
+      background: rgba(168, 85, 247, 0.1);
+      padding: 4px 12px;
+      border-radius: 50px;
+    }
+
+    /* Input stylisé */
+    .input-wrapper {
+      margin: 30px 0 20px;
+      text-align: left;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: #71717a;
+      margin-left: 10px;
+      font-weight: 600;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 1rem;
+      margin-top: 8px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    /* Bouton High-Tech */
+    .btn-submit {
+      width: 100%;
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 16px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-submit:hover {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Zone de résultat */
+    #pair { margin-top: 25px; }
+
+    .code-container {
+      background: #1a1a24;
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 18px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-val {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 4px;
+    }
+
+    /* Spinner */
+    .loader {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(0,0,0,0.1);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .btn-submit:hover .loader { border-top-color: #fff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer-text {
+      margin-top: 25px;
+      font-size: 0.7rem;
+      color: #52525b;
+    }
+
   </style>
 </head>
 <body>
 
-  <div class="ambient-light"></div>
-  <canvas id="particles"></canvas>
+  <div class="glow-bg"></div>
 
-  <div class="interface-card" id="box">
-    <div class="header">
-      <div class="logo-container"><img src="https://files.catbox.moe/6us9as.jpg" alt="logo"></div>
-      <div class="title-group">
-        <h1>NOX MINI V1</h1>
-        <p>Automated System Interface</p>
+  <div class="card-border-wrap">
+    <div class="main-card">
+      <div class="profile-section">
+        <div class="avatar-ring">
+          <img src="https://files.catbox.moe/6us9as.jpg" alt="Bot Logo">
+        </div>
       </div>
+      
+      <span class="badge">V1.0 Stable</span>
+      <h1>Nox Mini</h1>
+      
+      <div class="input-wrapper">
+        <label>NUMÉRO WHATSAPP</label>
+        <input type="number" id="number" class="input-field" placeholder="229XXXXXXXX" autocomplete="off">
+      </div>
+
+      <button class="btn-submit" id="submit">
+        <span>GÉNÉRER LE CODE</span>
+        <div class="loader" id="spinner"></div>
+      </button>
+
+      <div id="pair"></div>
+
+      <p class="footer-text">SECURE NEURAL PAIRING BY GAARA TECH</p>
     </div>
-
-    <div class="system-status">
-      <div id="server-status"><span class="status-dot"></span> SYSTEM OPERATIONAL</div>
-      <div id="active-count"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
-    </div>
-
-    <div class="input-wrapper">
-      <span class="input-label">PHONE NUMBER</span>
-      <!-- IMPORTANT: keep id="number" (same as original) -->
-      <input type="number" id="number" placeholder="+94xxxxxxxxx" autocomplete="off">
-    </div>
-
-    <!-- IMPORTANT: keep id="submit" (same as original) -->
-    <button class="action-btn" id="submit">
-      <span>INITIALIZE PAIRING</span>
-      <i class="fa-solid fa-arrow-right"></i>
-    </button>
-
-    <div class="terminal-output">
-      <!-- spinner element (will be toggled by JS) -->
-      <div class="spinner" id="spinner"></div>
-
-      <!-- output area (keeps id 'pair' for original JS compatibility) -->
-      <main id="pair"></main>
-    </div>
-
-    <div class="footer">GAARA TECH</div>
   </div>
 
-  <!-- toast -->
-  <div id="toast"><i class="fa-solid fa-check-circle" style="color:var(--accent)"></i> Code copied to clipboard!</div>
-
-  <!-- axios (compatible) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
 
   <script>
-    // Particles background (same behavior as your example)
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext('2d');
-    let particlesArray = [];
-
-    function resizeCanvas(){
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
-    resizeCanvas();
-
-    class Particle {
-      constructor(){
-        this.x = Math.random()*canvas.width;
-        this.y = Math.random()*canvas.height;
-        this.size = Math.random()*2;
-        this.speedX = Math.random()*0.6 - 0.3;
-        this.speedY = Math.random()*0.6 - 0.3;
-      }
-      update(){
-        this.x += this.speedX;
-        this.y += this.speedY;
-        if(this.x > canvas.width) this.x = 0;
-        if(this.x < 0) this.x = canvas.width;
-        if(this.y > canvas.height) this.y = 0;
-        if(this.y < 0) this.y = canvas.height;
-      }
-      draw(){
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
-        ctx.fill();
-      }
-    }
-
-    function initParticles(){
-      particlesArray = [];
-      const count = Math.round((canvas.width * canvas.height) / 16000);
-      for(let i=0;i<count;i++) particlesArray.push(new Particle());
-    }
-    function animateParticles(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      for(let i=0;i<particlesArray.length;i++){
-        particlesArray[i].update();
-        particlesArray[i].draw();
-        for(let j=i;j<particlesArray.length;j++){
-          const dx = particlesArray[i].x - particlesArray[j].x;
-          const dy = particlesArray[i].y - particlesArray[j].y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if(dist < 140){
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(0,242,234,${0.12 - dist/1200})`;
-            ctx.lineWidth = 0.4;
-            ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
-            ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      requestAnimationFrame(animateParticles);
-    }
-    initParticles();
-    animateParticles();
-
-    // Active users fetch (keeps your example behavior)
-    const countDisplay = document.getElementById('active-count');
-    async function fetchActiveUsers(){
-      try{
-        const res = await fetch('pair/active');
-        if(!res.ok) throw new Error('Network');
-        const data = await res.json();
-        countDisplay.innerHTML = `<i class="fa-solid fa-users"></i> ${data.count} ONLINE`;
-        countDisplay.style.color = "var(--accent)";
-      }catch(err){
-        countDisplay.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> OFFLINE`;
-        countDisplay.style.color = "var(--error)";
-      }
-    }
-    fetchActiveUsers();
-    setInterval(fetchActiveUsers, 5000);
-
-    // === YOUR ORIGINAL JS (kept logic, added spinner show/hide & minor UI niceties) ===
     let a = document.getElementById("pair");
     let b = document.getElementById("submit");
     let c = document.getElementById("number");
-    let box = document.getElementById("box");
     let spinner = document.getElementById("spinner");
 
     async function Copy() {
-      let text = document.getElementById("copy").innerText;
-      let obj = document.getElementById("copy");
-      await navigator.clipboard.writeText(obj.innerText.replace('CODE: ', ''));
-      obj.innerText = "COPIED ✅";
-      obj.style = "color:#32CD32;font-weight:bold";
+      let codeSpan = document.getElementById("pair-code");
+      await navigator.clipboard.writeText(codeSpan.innerText);
+      
+      let container = document.querySelector(".code-container");
+      container.style.background = "var(--primary)";
+      let originalHtml = container.innerHTML;
+      container.innerHTML = "<span style='color:white; font-weight:bold'>COPIÉ !</span>";
+      
       setTimeout(() => {
-        obj.innerText = text;
-        obj.style = "color:var(--pink);font-weight:bold";
-      }, 500);
+        container.innerHTML = originalHtml;
+        container.style.background = "#1a1a24";
+      }, 1500);
     }
 
     b.addEventListener("click", async (e) => {
       e.preventDefault();
-      // hide any previous outputs
       a.innerHTML = "";
-      spinner.style.display = "none";
+      
+      if (!c.value) return;
 
-      if (!c.value) {
-        a.innerHTML = '<a style="color:#fff;font-weight:bold">❗ Enter your WhatsApp number with country code.</a><br><br>';
-      } else if (c.value.replace(/[^0-9]/g, "").length < 11) {
-        a.innerHTML = '<a style="color:var(--pink);font-weight:bold">❌ Invalid number format ❌</a><br><br>';
-      } else {
-        const bc = c.value.replace(/[^0-9]/g, "");
-        let bb = "";
-        let bbc = "";
-        const cc = bc.split('');
-        cc.forEach((aChar, index) => {
-          bbc += aChar;
-          if (bbc.length === 3 || bbc.length === 8) {
-            bb += " " + aChar;
-          } else {
-            bb += aChar;
-          }
-        });
+      spinner.style.display = "block";
+      b.querySelector('span').innerText = "TRAITEMENT...";
+      
+      const num = c.value.replace(/[^0-9]/g, "");
 
-        c.type = "text";
-        c.value = "+" + bb;
-        c.style = "color:#fff;font-size:18px";
+      try {
+        let { data } = await axios(`/code?number=${num}`);
+        spinner.style.display = "none";
+        b.querySelector('span').innerText = "GÉNÉRER LE CODE";
+        let code = data.code || "ERR";
 
-        // show spinner (replaces "Please wait..." text)
-        spinner.style.display = "block";
-        a.innerHTML = ""; // clear previous
-
-        try {
-          let { data } = await axios(`/code?number=${bc}`);
-          spinner.style.display = "none";
-          let code = data.code || "Service Unavailable";
-
-          // format code for display (kept similar to example)
-          let displayCode = ("" + code).replace(/\s+/g,'');
-          if(displayCode.length >= 4){
-            displayCode = displayCode.match(/.{1,4}/g).join('-');
-          }
-
-          a.innerHTML = '<font id="copy" onclick="Copy()" style="color:var(--pink);font-weight:bold" size="5">CODE: <span style="color:var(--accent);font-weight:bold">' + displayCode + '</span></font><br><br><br>';
-        } catch (error) {
-          spinner.style.display = "none";
-          a.innerHTML = '<a style="color:var(--pink);font-weight:bold">❌ Error fetching code ❌</a><br><br>';
-        }
+        a.innerHTML = `
+          <div class="code-container" onclick="Copy()">
+            <div style="font-size:0.6rem; color:#71717a; margin-bottom:8px">TAP POUR COPIER</div>
+            <span id="pair-code" class="code-val">${code}</span>
+          </div>`;
+      } catch (error) {
+        spinner.style.display = "none";
+        b.querySelector('span').innerText = "RÉESSAYER";
+        a.innerHTML = '<p style="color:#ef4444; margin-top:15px; font-size:0.8rem">Échec de connexion au serveur.</p>';
       }
     });
-
-    // Provide global copyCode for clicks from formatted code (keeps compatibility)
-    window.copyCode = (code) => {
-      navigator.clipboard.writeText(code);
-      const toast = document.getElementById("toast");
-      toast.className = "show";
-      setTimeout(() => { toast.className = toast.className.replace("show",""); }, 3000);
-    };
-
   </script>
 </body>
-  </html>
+</html>
