@@ -7,7 +7,7 @@ if (fs.existsSync('.env')) {
 
 module.exports = {
     PREFIX: '.',
-    AUTO_TYPING: 'true',
-    AUTO_RECORDING: 'true',
+    AUTO_TYPING: 'false',
+    AUTO_RECORDING: 'false',
     // ... reste de vos configs
 };
