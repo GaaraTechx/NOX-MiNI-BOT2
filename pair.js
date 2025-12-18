@@ -128,48 +128,53 @@ async function startBot(number, res = null) {
 
             if (isCmd) {
                 switch (command) {
-                        case 'vv':
+                        
+                    
+
+        case 'vv':
 case 'viewonce':
     try {
-        // Vérifie si vous avez répondu à un message
-        if (!mek.message.extendedTextMessage || !mek.message.extendedTextMessage.contextInfo.quotedMessage) {
-            return await conn.sendMessage(from, { text: "🎐 Veuillez répondre à un message à vue unique !" }, { quoted: mek });
+        // 1. Vérifier si un message est cité
+        const quoted = mek.message.extendedTextMessage?.contextInfo?.quotedMessage;
+        if (!quoted) return await conn.sendMessage(from, { text: "🎐 Répondez à un message à vue unique !" }, { quoted: mek });
+
+        // 2. Extraire le contenu réel du View Once (Gestion des couches V2 et V1)
+        // On cherche le message à l'intérieur de viewOnceMessageV2 ou viewOnceMessage
+        let viewOnceContent = quoted.viewOnceMessageV2?.message || quoted.viewOnceMessage?.message || quoted;
+
+        // 3. Déterminer le type de média (imageMessage, videoMessage, etc.)
+        let type = getContentType(viewOnceContent);
+
+        // 4. Vérification stricte du type
+        if (!type || !['imageMessage', 'videoMessage', 'audioMessage'].includes(type)) {
+            return await conn.sendMessage(from, { text: "❌ Erreur : Le message cité ne contient pas de média à vue unique valide." }, { quoted: mek });
         }
 
-        let quoted = mek.message.extendedTextMessage.contextInfo.quotedMessage;
-        
-        // Détection du type de contenu à vue unique (V2)
-        let viewOnce = quoted.viewOnceMessageV2 || quoted.viewOnceMessage;
-        
-        if (!viewOnce) {
-            return await conn.sendMessage(from, { text: "❌ Ce n'est pas un message à vue unique." }, { quoted: mek });
-        }
-
-        // Extraction du message réel (image, video ou audio)
-        let type = Object.keys(viewOnce.message)[0];
-        let media = viewOnce.message[type];
-
-        // Téléchargement du média
+        // 5. Téléchargement du média
         const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+        const media = viewOnceContent[type];
         const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
+        
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        // Renvoi du média selon son type
-        if (/image/.test(type)) {
+        // 6. Renvoi du média sans la restriction de vue unique
+        if (type === 'imageMessage') {
             await conn.sendMessage(from, { image: buffer, caption: media.caption || "✅ Image récupérée" }, { quoted: mek });
-        } else if (/video/.test(type)) {
+        } else if (type === 'videoMessage') {
             await conn.sendMessage(from, { video: buffer, caption: media.caption || "✅ Vidéo récupérée" }, { quoted: mek });
-        } else if (/audio/.test(type)) {
+        } else if (type === 'audioMessage') {
             await conn.sendMessage(from, { audio: buffer, mimetype: 'audio/mp4', ptt: false }, { quoted: mek });
         }
+
     } catch (e) {
-        console.error(e);
-        await conn.sendMessage(from, { text: "❌ Erreur lors de la récupération." }, { quoted: mek });
+        console.error("Erreur VV:", e);
+        await conn.sendMessage(from, { text: "❌ Impossible de récupérer ce média." }, { quoted: mek });
     }
     break;
+
 
                     case 'menu':
                         const menuMsg = `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 𝑴𝑬𝑵𝑼 ───⭓
