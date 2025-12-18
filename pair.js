@@ -12,31 +12,35 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
-const config = require('./config');
+const config = require('./config'); // Assurez-vous que ce fichier existe avec votre PREFIX
 
 const router = express.Router();
 
 // ==============================================================================
-// 1. ROUTES WEB (Pour l'affichage du code sur pair.html)
+// 1. ROUTES WEB (INTERFACE PAIRING)
 // ==============================================================================
 
-router.get('/', (req, res) => res.sendFile(path.join(__dirname, 'pair.html')));
+router.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pair.html'));
+});
 
 router.get('/code', async (req, res) => {
     const number = req.query.number;
-    if (!number) return res.json({ error: 'Numéro requis' });
+    if (!number) return res.json({ error: 'Numéro de téléphone requis' });
     await startBot(number, res);
 });
 
 // ==============================================================================
-// 2. LOGIQUE DU BOT
+// 2. LOGIQUE DU BOT & CONNEXION
 // ==============================================================================
 
 async function startBot(number, res = null) {
     const sanitizedNumber = number.replace(/[^0-9]/g, '');
     const sessionDir = path.join(__dirname, 'session', `session_${sanitizedNumber}`);
     
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+    if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir, { recursive: true });
+    }
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
@@ -59,7 +63,8 @@ async function startBot(number, res = null) {
                 const code = await conn.requestPairingCode(sanitizedNumber);
                 if (res && !res.headersSent) res.json({ code: code });
             } catch (err) {
-                if (res && !res.headersSent) res.json({ error: 'Erreur génération code' });
+                console.error("Erreur pairing:", err);
+                if (res && !res.headersSent) res.json({ error: 'Erreur lors de la génération' });
             }
         }, 3000);
     } else {
@@ -71,16 +76,21 @@ async function startBot(number, res = null) {
     // --- GESTION DE LA CONNEXION ---
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
+        
         if (connection === 'open') {
-            console.log(`✅ Connecté avec succès au numéro : ${sanitizedNumber}`);
-            await conn.sendMessage(jidNormalizedUser(conn.user.id), { 
-                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nLe bot est prêt à recevoir vos commandes." 
+            console.log(`✅ NOX-MINI connecté sur : ${sanitizedNumber}`);
+            const userJid = jidNormalizedUser(conn.user.id);
+            
+            await conn.sendMessage(userJid, { 
+                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nLe bot est prêt ! Tapez `.menu` pour voir les commandes." 
             });
         }
+
         if (connection === 'close') {
             let reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) {
-                startBot(sanitizedNumber); // Auto-reconnect
+                console.log("⚠️ Connexion perdue, reconnexion...");
+                startBot(sanitizedNumber);
             }
         }
     });
@@ -91,16 +101,17 @@ async function startBot(number, res = null) {
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         try {
             const mek = chatUpdate.messages[0];
-            if (!mek.message || mek.key.fromMe) return;
+            if (!mek.message) return;
 
+            // Note: On ne bloque pas 'fromMe' pour que vous puissiez tester seul
             const from = mek.key.remoteJid;
             const mtype = getContentType(mek.message);
             
-            // Extraction du texte
-            const body = (mtype === 'conversation') ? mek.message.conversation : 
-                         (mtype === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : 
-                         (mtype === 'imageMessage') ? mek.message.imageMessage.caption : 
-                         (mtype === 'videoMessage') ? mek.message.videoMessage.caption : '';
+            // Extraction du contenu texte
+            let body = (mtype === 'conversation') ? mek.message.conversation : 
+                       (mtype === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : 
+                       (mtype === 'imageMessage') ? mek.message.imageMessage.caption : 
+                       (mtype === 'videoMessage') ? mek.message.videoMessage.caption : '';
 
             const prefix = config.PREFIX || '.';
             const isCmd = body.startsWith(prefix);
@@ -110,35 +121,34 @@ async function startBot(number, res = null) {
 
             if (isCmd) {
                 switch (command) {
-                    case 'ping':
-                        await conn.sendMessage(from, { text: "Pong! 🏓" }, { quoted: mek });
+                    case 'menu':
+                        const menuMsg = `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 𝑴𝑬𝑵𝑼 ───⭓
+│ ✧ ${prefix}ping : Tester la vitesse
+│ ✧ ${prefix}owner : Infos développeur
+│ ✧ ${prefix}hi : Salutation
+╰──────────────────────⭓`;
+                        await conn.sendMessage(from, { text: menuMsg }, { quoted: mek });
                         break;
 
-                    case 'hi':
-                    case 'hello':
-                        await conn.sendMessage(from, { text: "Salut ! Comment puis-je vous aider ?" }, { quoted: mek });
+                    case 'ping':
+                        await conn.sendMessage(from, { text: "⚡ *Pong!* Le bot est actif." }, { quoted: mek });
                         break;
 
                     case 'owner':
-                        await conn.sendMessage(from, { text: `Mon développeur est GaaraTech.` }, { quoted: mek });
+                        await conn.sendMessage(from, { text: "👤 *Développeur :* GaaraTech" }, { quoted: mek });
                         break;
 
-                    case 'menu':
-                        const menuText = `*LISTE DES COMMANDES*\n\n` +
-                                         `> ${prefix}ping\n` +
-                                         `> ${prefix}owner\n` +
-                                         `> ${prefix}info`;
-                        await conn.sendMessage(from, { text: menuText }, { quoted: mek });
+                    case 'hi':
+                        await conn.sendMessage(from, { text: "Salut ! Je suis Nox-Mini, comment puis-je t'aider ?" }, { quoted: mek });
                         break;
 
                     default:
-                        // Si la commande n'existe pas, on ne fait rien
+                        // Optionnel : Message si commande inconnue
                         break;
                 }
             }
-
         } catch (e) {
-            console.error("Erreur Message Upsert:", e);
+            console.error("Erreur message:", e);
         }
     });
 }
