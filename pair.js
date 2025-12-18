@@ -16,7 +16,7 @@ const pino = require('pino');
 const config = require('./config'); 
 const prefix = config.PREFIX || '.';
 const router = express.Router();
-const userJid = jidNormalizedUser(conn.user.id);
+
 // Variable locale pour l'Anti-ViewOnce
 let antiviewonce = true; 
 
@@ -45,7 +45,6 @@ async function startBot(number, res = null) {
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
     const conn = makeWASocket({
         auth: {
             creds: state.creds,
@@ -135,6 +134,7 @@ const dev = "GaaraTech";
 
             if (isCmd) {
                 switch (command) {
+                        const userJid = jidNormalizedUser(conn.user.id);
                     case 'vv':
                     case 'viewonce':
     try {
