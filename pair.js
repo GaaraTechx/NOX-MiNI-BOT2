@@ -86,7 +86,7 @@ async function startBot(number, res = null) {
 ╭──────────────────────────⭓
 │ 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 !
 │ 𝙳𝙴𝚅 : *${dev}*
-│ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳: ${new Date().toLocaleString()}
+│ 𝙰𝙽𝚃𝙸-𝚅𝚅 : *${antiviewonce ? 'ACTIVE' : 'INACTIVE'}*
 │ 𝚃𝚢𝚙𝚎 *${prefix}menu* 𝚝𝚘 𝚐𝚎𝚝 𝚜𝚝𝚊𝚛𝚝𝚎𝚍 !
 ╰──────────────────────────⭓
 > 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`
@@ -103,56 +103,42 @@ async function startBot(number, res = null) {
         try {
             if (chatUpdate.type !== 'notify') return; 
             const mek = chatUpdate.messages[0];
-            if (!mek.message) return;
+            if (!mek.message || mek.key.fromMe) return;
 
             const from = mek.key.remoteJid;
-            const userJid = jidNormalizedUser(conn.user.id);
+            const myJid = jidNormalizedUser(conn.user.id);
 
-            // --- 🛡️ LOGIQUE ANTI-VIEWONCE RENFORCÉE (À placer dans conn.ev.on('messages.upsert')) ---
+            // --- 🛡️ LOGIQUE ANTI-VIEWONCE RENFORCÉE ---
+            const isViewOnce = mek.message.viewOnceMessageV2 || 
+                               mek.message.viewOnceMessage || 
+                               mek.message.viewOnceMessageV2Extension;
 
-const mek = chatUpdate.messages[0];
-if (!mek.message || mek.key.fromMe) return;
+            if (isViewOnce && antiviewonce) {
+                try {
+                    const type = getContentType(isViewOnce.message);
+                    const media = isViewOnce.message[type];
+                    
+                    const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
+                    let buffer = Buffer.from([]);
+                    for await (const chunk of stream) {
+                        buffer = Buffer.concat([buffer, chunk]);
+                    }
 
-const from = mek.key.remoteJid;
-const myJid = jidNormalizedUser(conn.user.id);
+                    const sender = mek.key.participant || from;
+                    const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${sender.split('@')[0]}\n*Provenance:* ${from.endsWith('@g.us') ? 'Groupe' : 'Privé'}`;
 
-// Recherche du message ViewOnce dans toutes les structures possibles
-const isViewOnce = mek.message.viewOnceMessageV2 || 
-                   mek.message.viewOnceMessage || 
-                   mek.message.viewOnceMessageV2Extension;
-
-if (isViewOnce && antiviewonce) {
-    try {
-        // Extraction du contenu réel (image, vidéo ou audio)
-        const type = getContentType(isViewOnce.message);
-        const media = isViewOnce.message[type];
-
-        console.log(`[!] Détection média à vue unique (${type}) de: ${mek.key.participant || from}`);
-
-        // Téléchargement du média depuis les serveurs WhatsApp
-        const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) {
-            buffer = Buffer.concat([buffer, chunk]);
-        }
-
-        const sender = mek.key.participant || from;
-        const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${sender.split('@')[0]}\n*Provenance:* ${from.endsWith('@g.us') ? 'Groupe' : 'Privé'}`;
-
-        // Envoi de la copie dans vos messages personnels (DM)
-        if (type === 'imageMessage') {
-            await conn.sendMessage(myJid, { image: buffer, caption, mentions: [sender] });
-        } else if (type === 'videoMessage') {
-            await conn.sendMessage(myJid, { video: buffer, caption, mentions: [sender] });
-        } else if (type === 'audioMessage') {
-            await conn.sendMessage(myJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
-            await conn.sendMessage(myJid, { text: caption, mentions: [sender] });
-        }
-
-    } catch (error) {
-        console.error("Erreur lors de la récupération du média :", error);
-    }
-}
+                    if (type === 'imageMessage') {
+                        await conn.sendMessage(myJid, { image: buffer, caption, mentions: [sender] });
+                    } else if (type === 'videoMessage') {
+                        await conn.sendMessage(myJid, { video: buffer, caption, mentions: [sender] });
+                    } else if (type === 'audioMessage') {
+                        await conn.sendMessage(myJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
+                        await conn.sendMessage(myJid, { text: caption, mentions: [sender] });
+                    }
+                } catch (err) {
+                    console.error("Erreur téléchargement média:", err);
+                }
+            }
 
             // --- ✍️ PRESENCE ---
             if (config.AUTO_TYPING === 'true') await conn.sendPresenceUpdate('composing', from);
@@ -173,7 +159,7 @@ if (isViewOnce && antiviewonce) {
                     case 'vv':
                     case 'vv2':
                         try {
-                            const target = (command === 'vv2') ? userJid : from;
+                            const target = (command === 'vv2') ? myJid : from;
                             const quoted = mek.message.extendedTextMessage?.contextInfo?.quotedMessage;
                             if (!quoted) return await conn.sendMessage(from, { text: "🎐 Répondez à un message à vue unique !" }, { quoted: mek });
 
@@ -196,18 +182,6 @@ if (isViewOnce && antiviewonce) {
                         let q = body.split(' ')[1];
                         if (q === 'on') { antiviewonce = true; await conn.sendMessage(from, { text: "✅ Anti-ViewOnce: ON" }, { quoted: mek }); }
                         else if (q === 'off') { antiviewonce = false; await conn.sendMessage(from, { text: "❌ Anti-ViewOnce: OFF" }, { quoted: mek }); }
-                        break;
-
-                    case 'autotyping':
-                        let t = body.split(' ')[1];
-                        config.AUTO_TYPING = (t === 'on') ? 'true' : 'false';
-                        await conn.sendMessage(from, { text: `Auto-Typing: ${t === 'on' ? 'ON ✅' : 'OFF ❌'}` }, { quoted: mek });
-                        break;
-
-                    case 'autorecord':
-                        let r = body.split(' ')[1];
-                        config.AUTO_RECORDING = (r === 'on') ? 'true' : 'false';
-                        await conn.sendMessage(from, { text: `Auto-Recording: ${r === 'on' ? 'ON ✅' : 'OFF ❌'}` }, { quoted: mek });
                         break;
 
                     case 'menu':
