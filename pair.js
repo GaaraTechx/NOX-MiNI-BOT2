@@ -230,6 +230,3 @@ if (viewOnceMsg && antiviewonce) {
 }
 
 module.exports = router;
-
-
-Je veois aue quand quelqun envoie vue unique il envoie pas dans mon dm si je fais pas .vv2
