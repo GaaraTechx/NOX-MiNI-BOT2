@@ -14,9 +14,9 @@ app.use('/', pairRouter);
 app.listen(port, () => {
     console.log(`╭──────────────────────────────────────────⭓
 │ 🚀 NOX-MINI SERVER IS RUNNING
-│ 🌐 Port: ${PORT}
+│ 🌐 Port: ${port}
 │ 🛠️ Dev: GaaraTech
-│ 🔗 URL: http://localhost:${PORT}
+│ 🔗 URL: http://localhost:${port}
 ╰──────────────────────────────────────────⭓`);
 });
 
