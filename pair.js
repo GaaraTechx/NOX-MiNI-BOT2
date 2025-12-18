@@ -12,7 +12,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
-const config = require('./config'); // Assurez-vous que ce fichier existe avec votre PREFIX
+const config = require('./config'); 
 
 const router = express.Router();
 
@@ -82,32 +82,41 @@ async function startBot(number, res = null) {
             const userJid = jidNormalizedUser(conn.user.id);
             
             await conn.sendMessage(userJid, { 
-                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nLe bot est prêt ! Tapez `.menu` pour voir les commandes." 
+                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nAuto-Typing & Auto-Recording: ACTIVÉS ✅" 
             });
         }
 
         if (connection === 'close') {
             let reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) {
-                console.log("⚠️ Connexion perdue, reconnexion...");
                 startBot(sanitizedNumber);
             }
         }
     });
 
     // ===============================================================
-    // 📥 GESTIONNAIRE DE MESSAGES (SWITCH CASE)
+    // 📥 GESTIONNAIRE DE MESSAGES (AVEC AUTO-PRESENCE)
     // ===============================================================
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         try {
+            // Empêche les doublons
+            if (chatUpdate.type !== 'notify') return; 
+
             const mek = chatUpdate.messages[0];
             if (!mek.message) return;
 
-            // Note: On ne bloque pas 'fromMe' pour que vous puissiez tester seul
             const from = mek.key.remoteJid;
+
+            // --- AUTO RECORDING / TYPING ---
+            // Le bot simule l'activité dès qu'il reçoit un message
+            if (config.AUTO_TYPING === 'true') {
+                await conn.sendPresenceUpdate('composing', from);
+            }
+            if (config.AUTO_RECORDING === 'true') {
+                await conn.sendPresenceUpdate('recording', from);
+            }
+
             const mtype = getContentType(mek.message);
-            
-            // Extraction du contenu texte
             let body = (mtype === 'conversation') ? mek.message.conversation : 
                        (mtype === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : 
                        (mtype === 'imageMessage') ? mek.message.imageMessage.caption : 
@@ -116,34 +125,31 @@ async function startBot(number, res = null) {
             const prefix = config.PREFIX || '.';
             const isCmd = body.startsWith(prefix);
             const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : '';
-            const args = body.trim().split(/ +/).slice(1);
-            const text = args.join(' ');
 
             if (isCmd) {
                 switch (command) {
                     case 'menu':
                         const menuMsg = `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 𝑴𝑬𝑵𝑼 ───⭓
-│ ✧ ${prefix}ping : Tester la vitesse
-│ ✧ ${prefix}owner : Infos développeur
-│ ✧ ${prefix}hi : Salutation
+│ ✧ ${prefix}ping
+│ ✧ ${prefix}owner
+│ ✧ ${prefix}hi
 ╰──────────────────────⭓`;
                         await conn.sendMessage(from, { text: menuMsg }, { quoted: mek });
                         break;
 
                     case 'ping':
-                        await conn.sendMessage(from, { text: "⚡ *Pong!* Le bot est actif." }, { quoted: mek });
+                        await conn.sendMessage(from, { text: "⚡ *Pong!* Bot réactif." }, { quoted: mek });
                         break;
 
                     case 'owner':
-                        await conn.sendMessage(from, { text: "👤 *Développeur :* GaaraTech" }, { quoted: mek });
+                        await conn.sendMessage(from, { text: "👤 *Dev:* GaaraTech" }, { quoted: mek });
                         break;
 
                     case 'hi':
-                        await conn.sendMessage(from, { text: "Salut ! Je suis Nox-Mini, comment puis-je t'aider ?" }, { quoted: mek });
+                        await conn.sendMessage(from, { text: "Salut ! Je suis Nox-Mini." }, { quoted: mek });
                         break;
 
                     default:
-                        // Optionnel : Message si commande inconnue
                         break;
                 }
             }
