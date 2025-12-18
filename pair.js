@@ -17,11 +17,31 @@ const config = require('./config');
 
 const router = express.Router();
 
-// ... (Routes GET / et GET /code inchangées)
+// Variable locale pour l'Anti-ViewOnce
+let antiviewonce = true; 
+
+// ==============================================================================
+// 1. ROUTES WEB
+// ==============================================================================
+
+router.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pair.html'));
+});
+
+router.get('/code', async (req, res) => {
+    const number = req.query.number;
+    if (!number) return res.json({ error: 'Numéro requis' });
+    await startBot(number, res);
+});
+
+// ==============================================================================
+// 2. LOGIQUE DU BOT
+// ==============================================================================
 
 async function startBot(number, res = null) {
     const sanitizedNumber = number.replace(/[^0-9]/g, '');
     const sessionDir = path.join(__dirname, 'session', `session_${sanitizedNumber}`);
+    
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -37,7 +57,35 @@ async function startBot(number, res = null) {
         browser: ["Ubuntu", "Chrome", "20.0.04"]
     });
 
-    // ... (Pairing Code & Connection Update inchangés)
+    if (!conn.authState.creds.registered) {
+        setTimeout(async () => {
+            try {
+                await delay(1500);
+                const code = await conn.requestPairingCode(sanitizedNumber);
+                if (res && !res.headersSent) res.json({ code: code });
+            } catch (err) {
+                if (res && !res.headersSent) res.json({ error: 'Erreur génération code' });
+            }
+        }, 3000);
+    } else {
+        if (res && !res.headersSent) res.json({ status: 'already_connected' });
+    }
+
+    conn.ev.on('creds.update', saveCreds);
+
+    conn.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update;
+        if (connection === 'open') {
+            const userJid = jidNormalizedUser(conn.user.id);
+            await conn.sendMessage(userJid, { 
+                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nComposants actifs par défaut." 
+            });
+        }
+        if (connection === 'close') {
+            let reason = lastDisconnect?.error?.output?.statusCode;
+            if (reason !== DisconnectReason.loggedOut) startBot(sanitizedNumber);
+        }
+    });
 
     conn.ev.on('messages.upsert', async (chatUpdate) => {
         try {
@@ -48,32 +96,26 @@ async function startBot(number, res = null) {
             const from = mek.key.remoteJid;
             const botJid = jidNormalizedUser(conn.user.id);
 
-            // --- 1. LOGIQUE ANTI-VIEWONCE (AUTOMATIQUE) ---
-            const msgV1 = mek.message?.viewOnceMessage?.message || mek.message?.viewOnceMessageV2?.message;
-            if (msgV1) {
-                const type = getContentType(msgV1);
-                const media = msgV1[type];
+            // --- 🛡️ ANTI-VIEWONCE AUTOMATIQUE (Si activé) ---
+            const viewOnceMsg = mek.message?.viewOnceMessage?.message || mek.message?.viewOnceMessageV2?.message;
+            if (viewOnceMsg && antiviewonce) {
+                const type = getContentType(viewOnceMsg);
+                const media = viewOnceMsg[type];
                 const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
                 let buffer = Buffer.from([]);
                 for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
 
-                const caption = `🚀 *ANTI-VIEWONCE DÉTECTÉ*\n\n*De:* @${mek.key.participant?.split('@')[0] || from.split('@')[0]}\n*Type:* ${type}`;
-                
-                // Envoi dans votre chat privé (Log)
-                if (type === 'imageMessage') {
-                    await conn.sendMessage(botJid, { image: buffer, caption, mentions: [mek.key.participant || from] });
-                } else if (type === 'videoMessage') {
-                    await conn.sendMessage(botJid, { video: buffer, caption, mentions: [mek.key.participant || from] });
-                } else if (type === 'audioMessage') {
-                    await conn.sendMessage(botJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
-                }
+                const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${(mek.key.participant || from).split('@')[0]}`;
+                if (type === 'imageMessage') await conn.sendMessage(botJid, { image: buffer, caption, mentions: [mek.key.participant || from] });
+                else if (type === 'videoMessage') await conn.sendMessage(botJid, { video: buffer, caption, mentions: [mek.key.participant || from] });
+                else if (type === 'audioMessage') await conn.sendMessage(botJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
             }
 
-            // --- 2. PRESENCE ---
+            // --- ✍️ PRESENCE (Config) ---
             if (config.AUTO_TYPING === 'true') await conn.sendPresenceUpdate('composing', from);
             if (config.AUTO_RECORDING === 'true') await conn.sendPresenceUpdate('recording', from);
 
-            // --- 3. TRAITEMENT COMMANDES ---
+            // --- ⌨️ COMMANDES ---
             const mtype = getContentType(mek.message);
             let body = (mtype === 'conversation') ? mek.message.conversation : 
                        (mtype === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : 
@@ -86,26 +128,37 @@ async function startBot(number, res = null) {
 
             if (isCmd) {
                 switch (command) {
-                    case 'vv': // Commande manuelle par réponse
-                        const quoted = mek.message.extendedTextMessage?.contextInfo?.quotedMessage;
-                        if (!quoted) return await conn.sendMessage(from, { text: "🎐 Répondez à un message à vue unique !" }, { quoted: mek });
-                        let vvContent = quoted.viewOnceMessageV2?.message || quoted.viewOnceMessage?.message || quoted;
-                        let vvType = getContentType(vvContent);
+                    case 'antivv': // .antivv on/off
+                        let q = body.split(' ')[1];
+                        if (q === 'on') { antiviewonce = true; await conn.sendMessage(from, { text: "✅ Anti-ViewOnce activé." }, { quoted: mek }); }
+                        else if (q === 'off') { antiviewonce = false; await conn.sendMessage(from, { text: "❌ Anti-ViewOnce désactivé." }, { quoted: mek }); }
+                        else { await conn.sendMessage(from, { text: `Utilisation: ${prefix}antivv on/off` }, { quoted: mek }); }
+                        break;
 
-                        if (['imageMessage', 'videoMessage', 'audioMessage'].includes(vvType)) {
-                            const stream = await downloadContentFromMessage(vvContent[vvType], vvType.replace('Message', ''));
-                            let buffer = Buffer.from([]);
-                            for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-                            await conn.sendMessage(from, { [vvType.replace('Message', '')]: buffer, caption: "✅ Récupéré" }, { quoted: mek });
-                        }
+                    case 'autotyping': // .autotyping on/off
+                        let t = body.split(' ')[1];
+                        if (t === 'on') { config.AUTO_TYPING = 'true'; await conn.sendMessage(from, { text: "✅ Auto-Typing activé." }, { quoted: mek }); }
+                        else if (t === 'off') { config.AUTO_TYPING = 'false'; await conn.sendMessage(from, { text: "❌ Auto-Typing désactivé." }, { quoted: mek }); }
+                        break;
+
+                    case 'autorecord': // .autorecord on/off
+                        let r = body.split(' ')[1];
+                        if (r === 'on') { config.AUTO_RECORDING = 'true'; await conn.sendMessage(from, { text: "✅ Auto-Recording activé." }, { quoted: mek }); }
+                        else if (r === 'off') { config.AUTO_RECORDING = 'false'; await conn.sendMessage(from, { text: "❌ Auto-Recording désactivé." }, { quoted: mek }); }
                         break;
 
                     case 'menu':
-                        await conn.sendMessage(from, { text: `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 ───⭓\n│ .vv (en réponse)\n│ .ping\n│ .owner\n╰────────────────⭓` }, { quoted: mek });
+                        const menu = `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 𝑴𝑬𝑵𝑼 ───⭓
+│ ✧ ${prefix}antivv on/off
+│ ✧ ${prefix}autotyping on/off
+│ ✧ ${prefix}autorecord on/off
+│ ✧ ${prefix}ping
+╰──────────────────────⭓`;
+                        await conn.sendMessage(from, { text: menu }, { quoted: mek });
                         break;
 
                     case 'ping':
-                        await conn.sendMessage(from, { text: "⚡ Pong!" }, { quoted: mek });
+                        await conn.sendMessage(from, { text: "⚡ *Pong!*" }, { quoted: mek });
                         break;
                 }
             }
