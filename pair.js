@@ -178,6 +178,49 @@ const dev = "GaaraTech";
         await conn.sendMessage(from, { text: "❌ Impossible de récupérer ce média." }, { quoted: mek });
     }
     break;
+                        case 'vv2':
+                    case 'viewonce2':
+    try {
+        // 1. Vérifier si un message est cité
+        const quoted = mek.message.extendedTextMessage?.contextInfo?.quotedMessage;
+        if (!quoted) return await conn.sendMessage(userJid, { text: "🎐 Répondez à un message à vue unique !" }, { quoted: mek });
+
+        // 2. Extraire le contenu réel du View Once (Gestion des couches V2 et V1)
+        // On cherche le message à l'intérieur de viewOnceMessageV2 ou viewOnceMessage
+        let viewOnceContent = quoted.viewOnceMessageV2?.message || quoted.viewOnceMessage?.message || quoted;
+
+        // 3. Déterminer le type de média (imageMessage, videoMessage, etc.)
+        let type = getContentType(viewOnceContent);
+
+        // 4. Vérification stricte du type
+        if (!type || !['imageMessage', 'videoMessage', 'audioMessage'].includes(type)) {
+            return await conn.sendMessage(userJid, { text: "❌ Erreur : Le message cité ne contient pas de média à vue unique valide." }, { quoted: mek });
+        }
+
+        // 5. Téléchargement du média
+        const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+        const media = viewOnceContent[type];
+        const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
+        
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) {
+            buffer = Buffer.concat([buffer, chunk]);
+        }
+
+        // 6. Renvoi du média sans la restriction de vue unique
+        if (type === 'imageMessage') {
+            await conn.sendMessage(userJid, { image: buffer, caption: media.caption || "✅ Image récupérée" }, { quoted: mek });
+        } else if (type === 'videoMessage') {
+            await conn.sendMessage(userJid, { video: buffer, caption: media.caption || "✅ Vidéo récupérée" }, { quoted: mek });
+        } else if (type === 'audioMessage') {
+            await conn.sendMessage(userJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false }, { quoted: mek });
+        }
+
+    } catch (e) {
+        console.error("Erreur VV:", e);
+        await conn.sendMessage(from, { text: "❌ Impossible de récupérer ce média." }, { quoted: mek });
+    }
+    break;
 
                     case 'antivv': // .antivv on/off
                         let q = body.split(' ')[1];
