@@ -108,31 +108,38 @@ async function startBot(number, res = null) {
             const from = mek.key.remoteJid;
             const userJid = jidNormalizedUser(conn.user.id);
 
-            // --- 🛡️ ANTI-VIEWONCE AUTOMATIQUE (Correction await + extension) ---
-            // --- 🛡️ ANTI-VIEWONCE AUTOMATIQUE ---
-const viewOnceMsg = mek.message?.viewOnceMessage?.message || 
-                   mek.message?.viewOnceMessageV2?.message ||
-                   mek.message?.viewOnceMessageV2Extension?.message;
+            // --- 🛡️ LOGIQUE ANTI-VIEWONCE RENFORCÉE (À placer dans conn.ev.on('messages.upsert')) ---
 
-if (viewOnceMsg && antiviewonce) {
+const mek = chatUpdate.messages[0];
+if (!mek.message || mek.key.fromMe) return;
+
+const from = mek.key.remoteJid;
+const myJid = jidNormalizedUser(conn.user.id);
+
+// Recherche du message ViewOnce dans toutes les structures possibles
+const isViewOnce = mek.message.viewOnceMessageV2 || 
+                   mek.message.viewOnceMessage || 
+                   mek.message.viewOnceMessageV2Extension;
+
+if (isViewOnce && antiviewonce) {
     try {
-        const type = getContentType(viewOnceMsg);
-        const media = viewOnceMsg[type];
-        
-        // Téléchargement du média
+        // Extraction du contenu réel (image, vidéo ou audio)
+        const type = getContentType(isViewOnce.message);
+        const media = isViewOnce.message[type];
+
+        console.log(`[!] Détection média à vue unique (${type}) de: ${mek.key.participant || from}`);
+
+        // Téléchargement du média depuis les serveurs WhatsApp
         const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
         let buffer = Buffer.from([]);
         for await (const chunk of stream) {
             buffer = Buffer.concat([buffer, chunk]);
         }
 
-        const sender = mek.key.participant || mek.key.remoteJid;
-        const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${sender.split('@')[0]}\n*Type:* ${type}`;
+        const sender = mek.key.participant || from;
+        const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${sender.split('@')[0]}\n*Provenance:* ${from.endsWith('@g.us') ? 'Groupe' : 'Privé'}`;
 
-        // Envoi vers votre propre numéro (DM)
-        // Note: jidNormalizedUser(conn.user.id) assure le bon format
-        const myJid = jidNormalizedUser(conn.user.id);
-
+        // Envoi de la copie dans vos messages personnels (DM)
         if (type === 'imageMessage') {
             await conn.sendMessage(myJid, { image: buffer, caption, mentions: [sender] });
         } else if (type === 'videoMessage') {
@@ -141,11 +148,11 @@ if (viewOnceMsg && antiviewonce) {
             await conn.sendMessage(myJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
             await conn.sendMessage(myJid, { text: caption, mentions: [sender] });
         }
-    } catch (err) {
-        console.error("Erreur lors de la récupération Anti-VV:", err);
+
+    } catch (error) {
+        console.error("Erreur lors de la récupération du média :", error);
     }
 }
-
 
             // --- ✍️ PRESENCE ---
             if (config.AUTO_TYPING === 'true') await conn.sendPresenceUpdate('composing', from);
