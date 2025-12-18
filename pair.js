@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const config = require('./config'); 
-
+const prefix = config.PREFIX || '.';
 const router = express.Router();
 
 // Variable locale pour l'Anti-ViewOnce
@@ -72,13 +72,20 @@ async function startBot(number, res = null) {
     }
 
     conn.ev.on('creds.update', saveCreds);
-
+const dev = "GaaraTech";
     conn.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
         if (connection === 'open') {
             const userJid = jidNormalizedUser(conn.user.id);
             await conn.sendMessage(userJid, { 
-                text: "✨ *NOX MINI BOT CONNECTÉ*\n\nComposants actifs par défaut." 
+                text: `𝑾𝑬𝑳𝑪𝑶𝑴𝑬 𝑻𝑶 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻
+╭──────────────────────────⭓
+│ 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 !
+│ 𝙳𝙴𝚅 : *${dev}*
+│ 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳: ${new Date().toLocaleString()}
+│ 𝚃𝚢𝚙𝚎 *${config.PREFIX}menu* 𝚝𝚘 𝚐𝚎𝚝 𝚜𝚝𝚊𝚛𝚝𝚎𝚍 !
+╰──────────────────────────⭓
+> 𝑵𝑶𝑿 𝑴𝑰𝑵𝑰 𝑩𝑶𝑻`
             });
         }
         if (connection === 'close') {
@@ -122,7 +129,7 @@ async function startBot(number, res = null) {
                        (mtype === 'imageMessage') ? mek.message.imageMessage.caption : 
                        (mtype === 'videoMessage') ? mek.message.videoMessage.caption : '';
 
-            const prefix = config.PREFIX || '.';
+            
             const isCmd = body.startsWith(prefix);
             const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : '';
 
