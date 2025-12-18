@@ -16,7 +16,7 @@ const pino = require('pino');
 const config = require('./config'); 
 const prefix = config.PREFIX || '.';
 const router = express.Router();
-
+const userJid = jidNormalizedUser(conn.user.id);
 // Variable locale pour l'Anti-ViewOnce
 let antiviewonce = true; 
 
@@ -101,7 +101,7 @@ const dev = "GaaraTech";
             if (!mek.message) return;
 
             const from = mek.key.remoteJid;
-            const botJid = jidNormalizedUser(conn.user.id);
+            const userJid = jidNormalizedUser(conn.user.id);
 
             // --- 🛡️ ANTI-VIEWONCE AUTOMATIQUE (Si activé) ---
             const viewOnceMsg = mek.message?.viewOnceMessage?.message || mek.message?.viewOnceMessageV2?.message;
@@ -113,9 +113,9 @@ const dev = "GaaraTech";
                 for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
 
                 const caption = `🚀 *NOX-MINI ANTI-VIEWONCE*\n\n*De:* @${(mek.key.participant || from).split('@')[0]}`;
-                if (type === 'imageMessage') await conn.sendMessage(botJid, { image: buffer, caption, mentions: [mek.key.participant || from] });
-                else if (type === 'videoMessage') await conn.sendMessage(botJid, { video: buffer, caption, mentions: [mek.key.participant || from] });
-                else if (type === 'audioMessage') await conn.sendMessage(botJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
+                if (type === 'imageMessage') await conn.sendMessage(userJid, { image: buffer, caption, mentions: [mek.key.participant || from] });
+                else if (type === 'videoMessage') conn.sendMessage(userJid, { video: buffer, caption, mentions: [mek.key.participant || from] });
+                else if (type === 'audioMessage') conn.sendMessage(userJid, { audio: buffer, mimetype: 'audio/mp4', ptt: false });
             }
 
             // --- ✍️ PRESENCE (Config) ---
