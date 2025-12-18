@@ -12,7 +12,12 @@ const pairRouter = require('./pair');
 app.use('/', pairRouter);
 
 app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
+    console.log(`╭──────────────────────────────────────────⭓
+│ 🚀 NOX-MINI SERVER IS RUNNING
+│ 🌐 Port: ${PORT}
+│ 🛠️ Dev: GaaraTech
+│ 🔗 URL: http://localhost:${PORT}
+╰──────────────────────────────────────────⭓`);
 });
 
 module.exports = app;
