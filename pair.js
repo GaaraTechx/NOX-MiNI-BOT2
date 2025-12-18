@@ -128,6 +128,49 @@ async function startBot(number, res = null) {
 
             if (isCmd) {
                 switch (command) {
+                        case 'vv':
+case 'viewonce':
+    try {
+        // Vérifie si vous avez répondu à un message
+        if (!mek.message.extendedTextMessage || !mek.message.extendedTextMessage.contextInfo.quotedMessage) {
+            return await conn.sendMessage(from, { text: "🎐 Veuillez répondre à un message à vue unique !" }, { quoted: mek });
+        }
+
+        let quoted = mek.message.extendedTextMessage.contextInfo.quotedMessage;
+        
+        // Détection du type de contenu à vue unique (V2)
+        let viewOnce = quoted.viewOnceMessageV2 || quoted.viewOnceMessage;
+        
+        if (!viewOnce) {
+            return await conn.sendMessage(from, { text: "❌ Ce n'est pas un message à vue unique." }, { quoted: mek });
+        }
+
+        // Extraction du message réel (image, video ou audio)
+        let type = Object.keys(viewOnce.message)[0];
+        let media = viewOnce.message[type];
+
+        // Téléchargement du média
+        const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+        const stream = await downloadContentFromMessage(media, type.replace('Message', ''));
+        let buffer = Buffer.from([]);
+        for await (const chunk of stream) {
+            buffer = Buffer.concat([buffer, chunk]);
+        }
+
+        // Renvoi du média selon son type
+        if (/image/.test(type)) {
+            await conn.sendMessage(from, { image: buffer, caption: media.caption || "✅ Image récupérée" }, { quoted: mek });
+        } else if (/video/.test(type)) {
+            await conn.sendMessage(from, { video: buffer, caption: media.caption || "✅ Vidéo récupérée" }, { quoted: mek });
+        } else if (/audio/.test(type)) {
+            await conn.sendMessage(from, { audio: buffer, mimetype: 'audio/mp4', ptt: false }, { quoted: mek });
+        }
+    } catch (e) {
+        console.error(e);
+        await conn.sendMessage(from, { text: "❌ Erreur lors de la récupération." }, { quoted: mek });
+    }
+    break;
+
                     case 'menu':
                         const menuMsg = `╭─── 𝑵𝑶𝑿-𝑴𝑰𝑵𝑰 𝑴𝑬𝑵𝑼 ───⭓
 │ ✧ ${prefix}ping
